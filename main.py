@@ -1,4 +1,3 @@
-import datetime
 from flask import Flask, request, jsonify
 from data import db_session
 from flask_cors import CORS
@@ -6,22 +5,15 @@ from data.models.user import User
 
 
 app = Flask(__name__)
-CORS(app, resources={r"/register": {"origins": "http://127.0.0.1:5500"}})
+CORS(app)
 db_session.global_init('db/casino.db')
 
-@app.route('/register', methods=['POST', 'OPTIONS'])
+@app.route('/register', methods=['POST', 'OPTIONS', 'GET'])
 def register():
-    if request.method == 'OPTIONS':
-        return '', 200
-
     data = request.get_json()
-
-
     user =  User(
         name=data['name'],
-        login=data['login'],
-        hashed_password=data['hashed_password'],
-        create_date=datetime.datetime.now().strftime('%d-%m-%Y'),
+        password=data['password'],
     )
 
     db_sess = db_session.create_session()
