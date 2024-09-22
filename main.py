@@ -24,7 +24,7 @@ def register():
     user = User(
         name=data['name'],
         login=data['login'],
-        password=generate_password_hash(data['password']),
+        hashed_password=generate_password_hash(data['password']),
     )
 
     db_sess.add(user)
