@@ -31,7 +31,7 @@ def register():
     user = User(
         name=data['name'],
         login=data['login'],
-        hashed_password=data['password'],
+        password=data['password'],
     )
 
     db_sess.add(user)
