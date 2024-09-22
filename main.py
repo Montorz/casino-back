@@ -1,3 +1,4 @@
+import datetime
 from flask import Flask, request, jsonify
 from data import db_session
 from flask_cors import CORS
@@ -25,6 +26,7 @@ def register():
         name=data['name'],
         login=data['login'],
         hashed_password=generate_password_hash(data['password']),
+        created_date=datetime.datetime.now().strftime('%d-%m-%Y'),
     )
 
     db_sess.add(user)
