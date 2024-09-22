@@ -1,8 +1,8 @@
-import datetime
 from flask import Flask, request, jsonify
 from data import db_session
 from flask_cors import CORS
 from data.models.user import User
+from werkzeug.security import generate_password_hash
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "http://127.0.0.1:5500"}})
@@ -15,13 +15,6 @@ def register():
         return jsonify({'status': 'ok'}), 200
 
     data = request.get_json()
-
-    # Проверка всех обязательных полей
-    required_fields = ['name', 'login', 'password', 'password_again']
-    for field in required_fields:
-        if field not in data or not data[field]:
-            return jsonify({"status": "error", "message": f"Поля '{field}' не заполнены"}), 400
-
     db_sess = db_session.create_session()
 
     # Проверка на пользователя с таким же логином
@@ -31,7 +24,7 @@ def register():
     user = User(
         name=data['name'],
         login=data['login'],
-        password=data['password'],
+        password=generate_password_hash(data['password']),
     )
 
     db_sess.add(user)
