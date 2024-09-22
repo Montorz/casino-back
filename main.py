@@ -15,14 +15,25 @@ def register():
         return jsonify({'status': 'ok'}), 200
 
     data = request.get_json()
+
+    # Проверка всех обязательных полей
+    required_fields = ['name', 'login', 'password', 'password_again']
+    for field in required_fields:
+        if field not in data or not data[field]:
+            return jsonify({"status": "error", "message": f"Поля '{field}' не заполнены"}), 400
+
+    db_sess = db_session.create_session()
+
+    # Проверка на пользователя с таким же логином
+    if db_sess.query(User).filter(User.login == data['login']).first():
+        return jsonify({"status": "error", "message": "Пользователь с таким логином уже существует"}), 400
+
     user = User(
         name=data['name'],
         login=data['login'],
-        password=data['password'],
-        created_date=datetime.datetime.now().strftime("%d-%m-%Y"),
+        hashed_password=data['password'],
     )
 
-    db_sess = db_session.create_session()
     db_sess.add(user)
     db_sess.commit()
 
