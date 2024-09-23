@@ -42,10 +42,11 @@ def login():
     data = request.get_json()
     db_sess = db_session.create_session()
 
-    # Проверка пользователя на правильность ввода пароля
-    if db_sess.query(User).filter(check_password_hash(User.hashed_password, data['password'])).first():
-        return jsonify({"status": "error", "message": "Пользователь с таким логином уже существует"}), 400
+    # Проверка пользователя на правильность ввода логина и пароля
+    user = db_sess.query(User).filter(User.login == data['login']).first()
 
+    if not user or not check_password_hash(user.hashed_password, data['password']):
+        return jsonify({"status": "error", "message": "Неправильный логин или пароль"}), 400
 
     return jsonify({"status": "success", "login": data}), 200
 
