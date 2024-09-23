@@ -50,7 +50,28 @@ def login():
 
     return jsonify({"status": "success", "login": data}), 200
 
+@app.route('/account', methods=['POST', 'OPTIONS', 'GET'])
+def account():
+    if request.method == 'OPTIONS':
+        return jsonify({'status': 'ok'}), 200
 
+    data = request.get_json()
+    db_sess = db_session.create_session()
+
+    user = db_sess.query(User).filter(User.login == data['login']).first()
+
+    if not user:
+        return jsonify({"status": "error", "message": "Пользователь не найден"}), 404
+
+    # Формирование данных пользователя для ответа
+    user_data = {
+        "id": user.id,
+        "name": user.name,
+        "login": user.login,
+        "created_date": user.created_date,
+    }
+
+    return jsonify({"status": "success", "account": user_data}), 200
 
 if __name__ == "__main__":
     app.run(debug=True)
