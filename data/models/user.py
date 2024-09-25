@@ -8,4 +8,4 @@ class User(SqlAlchemyBase):
     name = sqlalchemy.Column(sqlalchemy.String, nullable=False)
     login = sqlalchemy.Column(sqlalchemy.String, nullable=False)
     hashed_password = sqlalchemy.Column(sqlalchemy.String, nullable=False)
-    created_date = sqlalchemy.Column(sqlalchemy.String)
+    created_date = sqlalchemy.Column(sqlalchemy.String, nullable=False)

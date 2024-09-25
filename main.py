@@ -73,5 +73,28 @@ def account():
 
     return jsonify({"status": "success", "account": user_data}), 200
 
+@app.route('/edit_account', methods=['POST', 'OPTIONS', 'GET'])
+def edit_account():
+    if request.method == 'OPTIONS':
+        return jsonify({'status': 'ok'}), 200
+
+    data = request.get_json()
+    db_sess = db_session.create_session()
+
+    user = db_sess.query(User).filter(User.login == data['login']).first()
+
+    if not user:
+        return jsonify({"status": "error", "message": "Пользователь не найден"}), 404
+
+    # Обновление данных пользователя, если они присутствуют в запросе
+    if 'name' in data:
+        user.name = data['name']
+    if 'password' in data:
+        user.password = generate_password_hash(data['password'])
+
+    db_sess.commit()
+
+    return jsonify({"status": "success", "edit_account": "Успешное редактирование базы"}), 200
+
 if __name__ == "__main__":
     app.run(debug=True)
