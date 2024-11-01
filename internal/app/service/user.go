@@ -8,6 +8,7 @@ import (
 
 type IUserRepository interface {
 	CreateUser(user model.User) (int, error)
+	GetUser(login string, password string) (int, error)
 }
 
 type UserService struct {
@@ -17,6 +18,11 @@ type UserService struct {
 func (s *UserService) CreateUser(user model.User) (int, error) {
 	user.Password = s.generatePasswordHash(user.Password)
 	return s.userRepository.CreateUser(user)
+}
+
+func (s *UserService) GetUser(login string, password string) (int, error) {
+	password = s.generatePasswordHash(password)
+	return s.userRepository.GetUser(login, password)
 }
 
 func (s *UserService) generatePasswordHash(password string) string {

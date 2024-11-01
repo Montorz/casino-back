@@ -33,3 +33,25 @@ func (h *UserHandler) CreateUser(ctx *gin.Context) {
 		"id": id,
 	})
 }
+
+func (h *UserHandler) GetUser(ctx *gin.Context) {
+	var input struct {
+		Login    string `json:"login" binding:"required"`
+		Password string `json:"password" binding:"required"`
+	}
+
+	if err := ctx.BindJSON(&input); err != nil {
+		newErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	id, err := h.userService.GetUser(input.Login, input.Password)
+	if err != nil {
+		newErrorResponse(ctx, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	ctx.JSON(http.StatusOK, map[string]interface{}{
+		"id": id,
+	})
+}

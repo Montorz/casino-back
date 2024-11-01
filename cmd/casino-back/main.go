@@ -28,7 +28,7 @@ func main() {
 	auth := r.Group("/auth")
 	{
 		auth.POST("/sign-up", userHandler.CreateUser)
-		//auth.POST("/sign-in")
+		auth.POST("/sign-in", userHandler.GetUser)
 	}
 
 	err = http.ListenAndServe(":8000", r)
