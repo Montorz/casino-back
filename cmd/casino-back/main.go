@@ -5,7 +5,7 @@ import (
 	"casino-back/internal/app/logger"
 	"casino-back/internal/app/repository"
 	"casino-back/internal/app/service"
-	"github.com/gorilla/mux"
+	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"net/http"
@@ -22,8 +22,14 @@ func main() {
 	userService := service.NewUserService(userRepository)
 	userHandler := handler.NewUserHandler(userService)
 
-	r := mux.NewRouter()
-	r.HandleFunc("/auth/sign-up", userHandler.CreateUser).Methods(http.MethodPost)
+	r := gin.New()
+	//r.Use(cors.Default())
+
+	auth := r.Group("/auth")
+	{
+		auth.POST("/sign-up", userHandler.CreateUser)
+		//auth.POST("/sign-in")
+	}
 
 	err = http.ListenAndServe(":8000", r)
 	if err != nil {

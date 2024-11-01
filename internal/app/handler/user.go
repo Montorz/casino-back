@@ -1,8 +1,9 @@
 package handler
 
 import (
+	"casino-back/internal/app/model"
 	"casino-back/internal/app/service"
-	"encoding/json"
+	"github.com/gin-gonic/gin"
 	"net/http"
 )
 
@@ -14,32 +15,21 @@ func NewUserHandler(userService *service.UserService) *UserHandler {
 	return &UserHandler{userService: userService}
 }
 
-type UserCreateRequest struct {
-	Name     string `json:"name"`
-	Login    string `json:"login"`
-	Password string `json:"password"`
-	Balance  int    `json:"balance"`
-}
+func (h *UserHandler) CreateUser(ctx *gin.Context) {
+	var input model.User
 
-func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
-	var request UserCreateRequest
-	err := json.NewDecoder(r.Body).Decode(&request)
-	if err != nil {
-		w.WriteHeader(400)
-		w.Header().Set("Content-Type", "text/plain")
-		w.Write([]byte("invalid json create user"))
+	if err := ctx.BindJSON(&input); err != nil {
+		newErrorResponse(ctx, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	err = h.userService.CreateUser(request.Name, request.Login, request.Password, request.Balance)
+	id, err := h.userService.CreateUser(input)
+
 	if err != nil {
-		w.WriteHeader(500)
-		w.Header().Set("Content-Type", "text/plain")
-		w.Write([]byte("user can't create"))
-		return
+		newErrorResponse(ctx, http.StatusInternalServerError, err.Error())
 	}
 
-	w.WriteHeader(200)
-	w.Header().Set("Content-Type", "text/plain")
-	w.Write([]byte("user created"))
+	ctx.JSON(http.StatusOK, map[string]interface{}{
+		"id": id,
+	})
 }
