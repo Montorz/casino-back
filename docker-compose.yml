@@ -1,0 +1,14 @@
+version: "3.9"
+services:
+  db:
+    image: postgres:15-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=dev
+      - POSTGRES_PASSWORD=
+      - POSTGRES_DB=main
+      - POSTGRES_HOST_AUTH_METHOD=trust
+    volumes:
+      - /tmp/sql_dump:/docker-entrypoint-initdb.d
+    restart: always
