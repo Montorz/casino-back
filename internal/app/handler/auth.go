@@ -25,7 +25,6 @@ func (h *AuthHandler) SignUp(ctx *gin.Context) {
 	}
 
 	id, err := h.authService.CreateUser(input)
-
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

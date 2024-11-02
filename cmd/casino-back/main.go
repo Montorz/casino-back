@@ -13,15 +13,18 @@ import (
 )
 
 func main() {
-	db, err := sqlx.Connect("postgres", "user=dev dbname=postgres sslmode=disable")
+	db, err := sqlx.Connect("postgres", "user=dev dbname=main sslmode=disable")
 	if err != nil {
 		logger.ErrorKV("db error", "err", err)
 	}
 	logger.InfoKV("db connected")
 
+	transactionRepository := repository.NewTransactionRepository(db)
+	transactionService := service.NewTransactionService(transactionRepository)
+
 	userRepository := repository.NewUserRepository(db)
-	userService := service.NewUserService(userRepository)
-	_ = handler.NewUserHandler(userService) // userHandler
+	userService := service.NewUserService(userRepository, transactionRepository)
+	userHandler := handler.NewUserHandler(userService, transactionService)
 
 	authService := service.NewAuthService(userRepository)
 	authHandler := handler.NewAuthHandler(authService)
@@ -37,12 +40,7 @@ func main() {
 
 	api := r.Group("/api", authHandler.UserIdentity)
 	{
-		transactions := api.Group("/transactions")
-		{
-			transactions.POST("/")
-			transactions.GET("/")
-			transactions.GET("/:id")
-		}
+		api.GET("/transaction", userHandler.ChangeBalance)
 	}
 
 	err = http.ListenAndServe(":8000", r)
