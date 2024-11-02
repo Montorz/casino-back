@@ -21,18 +21,21 @@ func main() {
 
 	userRepository := repository.NewUserRepository(db)
 	userService := service.NewUserService(userRepository)
-	userHandler := handler.NewUserHandler(userService)
+	_ = handler.NewUserHandler(userService) // userHandler
+
+	authService := service.NewAuthService(userRepository)
+	authHandler := handler.NewAuthHandler(authService)
 
 	r := gin.New()
 	r.Use(cors.Default())
 
 	auth := r.Group("/auth")
 	{
-		auth.POST("/sign-up", userHandler.SignUp)
-		auth.POST("/sign-in", userHandler.SignIn)
+		auth.POST("/sign-up", authHandler.SignUp)
+		auth.POST("/sign-in", authHandler.SignIn)
 	}
 
-	api := r.Group("/api", userHandler.UserIdentity)
+	api := r.Group("/api", authHandler.UserIdentity)
 	{
 		transactions := api.Group("/transactions")
 		{
