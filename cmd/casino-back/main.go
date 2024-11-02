@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+	cors "github.com/rs/cors/wrapper/gin"
 	"net/http"
 )
 
@@ -23,12 +24,22 @@ func main() {
 	userHandler := handler.NewUserHandler(userService)
 
 	r := gin.New()
-	//r.Use(cors.Default())
+	r.Use(cors.Default())
 
 	auth := r.Group("/auth")
 	{
-		auth.POST("/sign-up", userHandler.CreateUser)
-		auth.POST("/sign-in", userHandler.GetUser)
+		auth.POST("/sign-up", userHandler.SignUp)
+		auth.POST("/sign-in", userHandler.SignIn)
+	}
+
+	api := r.Group("/api", userHandler.UserIdentity)
+	{
+		transactions := api.Group("/transactions")
+		{
+			transactions.POST("/")
+			transactions.GET("/")
+			transactions.GET("/:id")
+		}
 	}
 
 	err = http.ListenAndServe(":8000", r)
