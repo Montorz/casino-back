@@ -40,7 +40,7 @@ func main() {
 
 	api := r.Group("/api", authHandler.UserIdentity)
 	{
-		api.GET("/transaction", userHandler.ChangeBalance)
+		api.POST("/transaction", userHandler.ChangeBalance)
 	}
 
 	err = http.ListenAndServe(":8000", r)

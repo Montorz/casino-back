@@ -18,7 +18,7 @@ func NewTransactionRepository(db *sqlx.DB) *TransactionRepository {
 func (r *TransactionRepository) CreateTransaction(userId int, transaction model.Transaction) (int, error) {
 	var id int
 
-	query := fmt.Sprintf("INSERT INTO %s (user_id, title, amount) values ($1, $2, $3) RETURNING id", "transactions")
+	query := fmt.Sprintf("INSERT INTO %s (user_id, type, amount) values ($1, $2, $3) RETURNING id", "transactions")
 	row := r.db.QueryRow(query, userId, transaction.Type, transaction.Amount)
 
 	if err := row.Scan(&id); err != nil {
