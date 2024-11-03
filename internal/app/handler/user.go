@@ -1,22 +1,20 @@
 package handler
 
 import (
-	"casino-back/internal/app/model"
 	"casino-back/internal/app/service"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
 
 type UserHandler struct {
-	userService        *service.UserService
-	transactionService *service.TransactionService
+	userService *service.UserService
 }
 
-func NewUserHandler(userService *service.UserService, transactionService *service.TransactionService) *UserHandler {
-	return &UserHandler{userService: userService, transactionService: transactionService}
+func NewUserHandler(userService *service.UserService) *UserHandler {
+	return &UserHandler{userService: userService}
 }
 
-func (h *UserHandler) ChangeBalance(ctx *gin.Context) {
+func (h *UserHandler) GetUserData(ctx *gin.Context) {
 	userId, exists := ctx.Get("userId")
 	if !exists {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "no userId header"})
@@ -29,46 +27,47 @@ func (h *UserHandler) ChangeBalance(ctx *gin.Context) {
 		return
 	}
 
-	var input struct {
-		Type   string `json:"type" binding:"required"`
-		Amount int    `json:"amount" binding:"required"`
-	}
-
-	if err := ctx.BindJSON(&input); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	var err error
-	switch input.Type {
-	case "TopUp":
-		err = h.userService.TopUpBalance(userIDInt, input.Amount)
-	case "Withdraw":
-		err = h.userService.WithdrawBalance(userIDInt, input.Amount)
-	default:
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid operation type"})
-		return
-	}
-
+	userData, err := h.userService.GetUserData(userIDInt)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	transaction := model.Transaction{
-		UserId: userIDInt,
-		Type:   input.Type,
-		Amount: input.Amount,
+	type PublicUserData struct {
+		Name  string `json:"name"`
+		Login string `json:"login"`
 	}
 
-	transactionID, err := h.transactionService.CreateTransaction(userIDInt, transaction)
+	publicData := PublicUserData{
+		Name:  userData.Name,
+		Login: userData.Login,
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"user": publicData,
+	})
+}
+
+func (h *UserHandler) GetUserBalance(ctx *gin.Context) {
+	userId, exists := ctx.Get("userId")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "no userId header"})
+		return
+	}
+
+	userIDInt, ok := userId.(int)
+	if !ok {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "invalid userId type"})
+		return
+	}
+
+	balance, err := h.userService.GetBalance(userIDInt)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "transaction logging failed"})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"status":         "balance updated successfully",
-		"transaction_id": transactionID,
+		"balance": balance,
 	})
 }

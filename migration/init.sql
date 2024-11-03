@@ -9,8 +9,9 @@ CREATE TABLE users
 
 CREATE TABLE transactions
 (
-    id      SERIAL                                          NOT NULL UNIQUE,
-    user_id INTEGER REFERENCES users (id) ON DELETE CASCADE NOT NULL,
-    type    VARCHAR                                         NOT NULL,
-    amount  INTEGER                                         NOT NULL
+    id           SERIAL                                          NOT NULL UNIQUE,
+    user_id      INTEGER REFERENCES users (id) ON DELETE CASCADE NOT NULL,
+    type         VARCHAR                                         NOT NULL,
+    amount       INTEGER                                         NOT NULL,
+    created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP             NOT NULL
 );

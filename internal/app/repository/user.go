@@ -68,3 +68,17 @@ func (r *UserRepository) UpdateBalance(userId int, newBalance int) error {
 
 	return nil
 }
+
+func (r *UserRepository) GetUserData(userId int) (model.User, error) {
+	var user model.User
+
+	query := fmt.Sprintf("SELECT * FROM %s WHERE id = $1", "users")
+	err := r.db.Get(&user, query, userId)
+
+	if err != nil {
+		logger.ErrorKV("repository error", "err", err)
+		return model.User{}, err
+	}
+
+	return user, nil
+}

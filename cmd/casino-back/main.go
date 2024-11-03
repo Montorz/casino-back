@@ -19,14 +19,15 @@ func main() {
 	}
 	logger.InfoKV("db connected")
 
-	transactionRepository := repository.NewTransactionRepository(db)
-	transactionService := service.NewTransactionService(transactionRepository)
-
 	userRepository := repository.NewUserRepository(db)
-	userService := service.NewUserService(userRepository, transactionRepository)
-	userHandler := handler.NewUserHandler(userService, transactionService)
+	transactionRepository := repository.NewTransactionRepository(db)
 
+	userService := service.NewUserService(userRepository)
+	transactionService := service.NewTransactionService(transactionRepository)
 	authService := service.NewAuthService(userRepository)
+
+	userHandler := handler.NewUserHandler(userService)
+	transactionHandler := handler.NewTransactionHandler(userService, transactionService)
 	authHandler := handler.NewAuthHandler(authService)
 
 	r := gin.New()
@@ -47,7 +48,17 @@ func main() {
 
 	api := r.Group("/api", authHandler.UserIdentity)
 	{
-		api.POST("/transaction", userHandler.ChangeBalance)
+		account := api.Group("/account")
+		{
+			account.POST("", userHandler.GetUserData)
+			account.POST("/balance", userHandler.GetUserBalance)
+		}
+
+		transaction := api.Group("/transaction")
+		{
+			transaction.POST("/create", transactionHandler.CreateTransaction)
+			transaction.POST("/history", transactionHandler.GetTransactions)
+		}
 	}
 
 	err = http.ListenAndServe(":8000", r)

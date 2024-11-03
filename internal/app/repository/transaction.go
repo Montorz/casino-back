@@ -18,8 +18,8 @@ func NewTransactionRepository(db *sqlx.DB) *TransactionRepository {
 func (r *TransactionRepository) CreateTransaction(userId int, transaction model.Transaction) (int, error) {
 	var id int
 
-	query := fmt.Sprintf("INSERT INTO %s (user_id, type, amount) values ($1, $2, $3) RETURNING id", "transactions")
-	row := r.db.QueryRow(query, userId, transaction.Type, transaction.Amount)
+	query := fmt.Sprintf("INSERT INTO %s (user_id, type, amount, created_date) values ($1, $2, $3, $4) RETURNING id", "transactions")
+	row := r.db.QueryRow(query, userId, transaction.Type, transaction.Amount, transaction.CreatedDate)
 
 	if err := row.Scan(&id); err != nil {
 		logger.ErrorKV("repository error", "err", err)
@@ -27,4 +27,18 @@ func (r *TransactionRepository) CreateTransaction(userId int, transaction model.
 	}
 
 	return id, nil
+}
+
+func (r *TransactionRepository) GetTransactions(userId int) ([]model.Transaction, error) {
+	var transaction []model.Transaction
+
+	query := fmt.Sprintf("SELECT * FROM %s WHERE user_id = $1", "transactions")
+	err := r.db.Select(&transaction, query, userId)
+
+	if err != nil {
+		logger.ErrorKV("repository error", "err", err)
+		return nil, err
+	}
+
+	return transaction, nil
 }
