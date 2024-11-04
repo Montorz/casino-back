@@ -21,13 +21,16 @@ func main() {
 
 	userRepository := repository.NewUserRepository(db)
 	transactionRepository := repository.NewTransactionRepository(db)
+	slotRepository := repository.NewSlotRepository(db)
 
 	userService := service.NewUserService(userRepository)
 	transactionService := service.NewTransactionService(transactionRepository)
+	slotService := service.NewSlotService(slotRepository)
 	authService := service.NewAuthService(userRepository)
 
 	userHandler := handler.NewUserHandler(userService)
 	transactionHandler := handler.NewTransactionHandler(userService, transactionService)
+	slotHandler := handler.NewSlotHandler(slotService, userService)
 	authHandler := handler.NewAuthHandler(authService)
 
 	r := gin.New()
@@ -58,6 +61,14 @@ func main() {
 		{
 			transaction.POST("/create", transactionHandler.CreateTransaction)
 			transaction.POST("/history", transactionHandler.GetTransactions)
+		}
+
+		slot := api.Group("/slot")
+		{
+			slot.GET("/:name", slotHandler.GetSlotData)
+			slot.POST("/:name/bet", slotHandler.PlaceBet)
+			slot.POST("/:name/slot-result", slotHandler.GetSlotResult)
+			slot.POST("/:name/user-result", slotHandler.GetUserResult)
 		}
 	}
 
