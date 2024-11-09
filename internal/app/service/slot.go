@@ -8,6 +8,7 @@ import (
 )
 
 type ISlotRepository interface {
+	GetSlot(slotName string) (int, error)
 	GetSlotData(slotName string) (model.Slot, error)
 }
 
@@ -17,6 +18,10 @@ type SlotService struct {
 
 func NewSlotService(slotRepository ISlotRepository) *SlotService {
 	return &SlotService{slotRepository: slotRepository}
+}
+
+func (s *SlotService) GetSlot(slotName string) (int, error) {
+	return s.slotRepository.GetSlot(slotName)
 }
 
 func (s *SlotService) GetSlotData(slotName string) (model.Slot, error) {

@@ -112,38 +112,3 @@ func (h *SlotHandler) GetSlotResult(ctx *gin.Context) {
 		})
 	}
 }
-
-func (h *SlotHandler) GetUserResult(ctx *gin.Context) {
-	var input struct {
-		BetAmount   float64 `json:"betAmount" binding:"required"`
-		Coefficient float64 `json:"coefficient" binding:"required"`
-	}
-
-	if err := ctx.BindJSON(&input); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	userId, exists := ctx.Get("userId")
-	if !exists {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "no userId header"})
-		return
-	}
-
-	userIDInt, ok := userId.(int)
-	if !ok {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "invalid userId type"})
-		return
-	}
-
-	winAmount := int(input.BetAmount * input.Coefficient)
-	err := h.userService.TopUpBalance(userIDInt, winAmount)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-	}
-
-	ctx.JSON(http.StatusOK, map[string]interface{}{
-		"status":    "completed",
-		"winAmount": winAmount,
-	})
-}
