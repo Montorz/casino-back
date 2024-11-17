@@ -22,7 +22,7 @@ func (r *TransactionRepository) CreateTransaction(userId int, transaction model.
 	row := r.db.QueryRow(query, userId, transaction.Type, transaction.Amount, transaction.CreatedDate)
 
 	if err := row.Scan(&id); err != nil {
-		logger.ErrorKV("repository error", "err", err)
+		logger.InfoKV("repository error", "err", err)
 		return 0, err
 	}
 
@@ -30,15 +30,15 @@ func (r *TransactionRepository) CreateTransaction(userId int, transaction model.
 }
 
 func (r *TransactionRepository) GetTransactions(userId int) ([]model.Transaction, error) {
-	var transaction []model.Transaction
+	var transactions []model.Transaction
 
 	query := fmt.Sprintf("SELECT * FROM %s WHERE user_id = $1", "transactions")
-	err := r.db.Select(&transaction, query, userId)
+	err := r.db.Select(&transactions, query, userId)
 
 	if err != nil {
-		logger.ErrorKV("repository error", "err", err)
+		logger.InfoKV("repository error", "err", err)
 		return nil, err
 	}
 
-	return transaction, nil
+	return transactions, nil
 }

@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"casino-back/internal/app/model"
+	"casino-back/internal/app/handler/dto"
 	"casino-back/internal/app/service"
 	"github.com/gin-gonic/gin"
 	"net/http"
@@ -17,62 +17,61 @@ func NewAuthHandler(authService *service.AuthService) *AuthHandler {
 }
 
 func (h *AuthHandler) SignUp(ctx *gin.Context) {
-	var input model.User
+	var request dto.UserRequest
 
-	if err := ctx.BindJSON(&input); err != nil {
+	if err := ctx.BindJSON(&request); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	id, err := h.authService.CreateUser(input)
+	userId, err := h.authService.CreateUser(request.Name, request.Login, request.Password)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	ctx.JSON(http.StatusOK, map[string]interface{}{
-		"id": id,
+		"message": "User successfully registered",
+		"user_id": userId,
 	})
 }
 
 func (h *AuthHandler) SignIn(ctx *gin.Context) {
-	var input struct {
-		Login    string `json:"login" binding:"required"`
-		Password string `json:"password" binding:"required"`
-	}
+	var response dto.UserResponse
 
-	if err := ctx.BindJSON(&input); err != nil {
+	if err := ctx.BindJSON(&response); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	token, err := h.authService.GenerateToken(input.Login, input.Password)
+	token, err := h.authService.GenerateToken(response.Login, response.Password)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	ctx.JSON(http.StatusOK, map[string]interface{}{
-		"token": token,
+		"message": "User successfully authenticated",
+		"token":   token,
 	})
 }
 
 func (h *AuthHandler) UserIdentity(ctx *gin.Context) {
 	header := ctx.GetHeader("Authorization")
 	if header == "" {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "no authorization header"})
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "No authorization header"})
 		return
 	}
 
 	headerParts := strings.Split(header, " ")
 	if len(headerParts) != 2 {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "invalid authorization header"})
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid authorization header"})
 		return
 	}
 
 	userId, err := h.authService.ParseToken(headerParts[1])
 	if err != nil {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "invalid authorization header"})
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid authorization header"})
 		return
 	}
 

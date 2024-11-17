@@ -22,7 +22,7 @@ func (r *SlotRepository) GetSlot(slotName string) (int, error) {
 	err := r.db.Get(&id, query, slotName)
 
 	if err != nil {
-		logger.ErrorKV("repository error", "err", err)
+		logger.InfoKV("repository error", "err", err)
 		return 0, err
 	}
 
@@ -36,7 +36,7 @@ func (r *SlotRepository) GetSlotData(slotName string) (model.Slot, error) {
 	err := r.db.Get(&slot, query, slotName)
 
 	if err != nil {
-		logger.ErrorKV("repository error", "err", err)
+		logger.InfoKV("repository error", "err", err)
 		return model.Slot{}, err
 	}
 

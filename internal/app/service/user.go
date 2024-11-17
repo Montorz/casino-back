@@ -1,16 +1,17 @@
 package service
 
 import (
+	"casino-back/internal/app/logger"
 	"casino-back/internal/app/model"
 	"fmt"
 )
 
 type IUserRepository interface {
-	CreateUser(user model.User) (int, error)
-	GetUser(login string, password string) (int, error)
-	GetBalance(userId int) (int, error)
-	UpdateBalance(userId int, newBalance int) error
-	GetUserData(userId int) (model.User, error)
+	CreateUser(name, login, password string) (int, error)
+	GetUserId(login, password string) (int, error)
+	GetUserBalance(userId int) (int, error)
+	UpdateUserBalance(userId, newBalance int) error
+	GetUserData(userId int) (*model.User, error)
 }
 
 type UserService struct {
@@ -22,11 +23,11 @@ func NewUserService(userRepository IUserRepository) *UserService {
 }
 
 func (s *UserService) GetBalance(userId int) (int, error) {
-	return s.userRepository.GetBalance(userId)
+	return s.userRepository.GetUserBalance(userId)
 }
 
 func (s *UserService) UpdateBalance(userId int, newBalance int) error {
-	return s.userRepository.UpdateBalance(userId, newBalance)
+	return s.userRepository.UpdateUserBalance(userId, newBalance)
 }
 
 func (s *UserService) TopUpBalance(userId int, amount int) error {
@@ -36,7 +37,7 @@ func (s *UserService) TopUpBalance(userId int, amount int) error {
 	}
 	newBalance := balance + amount
 
-	return s.userRepository.UpdateBalance(userId, newBalance)
+	return s.userRepository.UpdateUserBalance(userId, newBalance)
 }
 
 func (s *UserService) WithdrawBalance(userId int, amount int) error {
@@ -46,13 +47,14 @@ func (s *UserService) WithdrawBalance(userId int, amount int) error {
 	}
 
 	if balance < amount {
-		return fmt.Errorf("insufficient balance: available %d, requested %d", balance, amount)
+		logger.InfoKV("service error", "err", fmt.Sprintf("insufficient balance: available %d, requested %d", balance, amount))
+		return err
 	}
 	newBalance := balance - amount
 
-	return s.userRepository.UpdateBalance(userId, newBalance)
+	return s.userRepository.UpdateUserBalance(userId, newBalance)
 }
 
-func (s *UserService) GetUserData(userId int) (model.User, error) {
+func (s *UserService) GetUserData(userId int) (*model.User, error) {
 	return s.userRepository.GetUserData(userId)
 }

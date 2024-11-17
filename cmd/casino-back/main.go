@@ -56,27 +56,27 @@ func main() {
 	{
 		account := api.Group("/account")
 		{
-			account.POST("/data", userHandler.GetUserData)
-			account.POST("/balance", userHandler.GetUserBalance)
+			account.GET("/data", userHandler.GetUserData)
+			account.GET("/balance", userHandler.GetUserBalance)
 		}
 
 		transaction := api.Group("/transaction")
 		{
 			transaction.POST("/create", transactionHandler.CreateTransaction)
-			transaction.POST("/history", transactionHandler.GetTransactions)
+			transaction.GET("/history", transactionHandler.GetTransactions)
 		}
 
 		slot := api.Group("/slot")
 		{
 			slot.GET("/:name/data", slotHandler.GetSlotData)
-			slot.POST("/:name/result", slotHandler.GetSlotResult)
+			slot.GET("/:name/result", slotHandler.GetSlotResult)
 			slot.POST("/:name/bet", slotHandler.PlaceBet)
 		}
 
 		game := api.Group("/game")
 		{
 			game.POST("/create", gameHandler.CreateGame)
-			game.POST("/history", gameHandler.GetGames)
+			game.GET("/history", gameHandler.GetGames)
 		}
 	}
 

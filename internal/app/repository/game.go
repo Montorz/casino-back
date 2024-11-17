@@ -22,7 +22,7 @@ func (r *GameRepository) CreateGame(userId int, slotId int, game model.Game) (in
 	row := r.db.QueryRow(query, userId, slotId, game.Name, game.BetAmount, game.Coefficient, game.WinAmount, game.CreatedDate)
 
 	if err := row.Scan(&id); err != nil {
-		logger.ErrorKV("repository error", "err", err)
+		logger.InfoKV("repository error", "err", err)
 		return 0, err
 	}
 
@@ -36,7 +36,7 @@ func (r *GameRepository) GetGames(userId int) ([]model.Game, error) {
 	err := r.db.Select(&game, query, userId)
 
 	if err != nil {
-		logger.ErrorKV("repository error", "err", err)
+		logger.InfoKV("repository error", "err", err)
 		return nil, err
 	}
 

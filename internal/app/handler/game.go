@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"casino-back/internal/app/handler/dto"
 	"casino-back/internal/app/model"
 	"casino-back/internal/app/service"
 	"github.com/gin-gonic/gin"
@@ -19,39 +20,32 @@ func NewGameHandler(gameService *service.GameService, slotService *service.SlotS
 }
 
 func (h *GameHandler) CreateGame(ctx *gin.Context) {
-	var input struct {
-		Name        string  `json:"name"`
-		BetAmount   float64 `json:"betAmount"`
-		Coefficient float64 `json:"coefficient"`
-	}
+	var request dto.GameRequest
 
-	if err := ctx.BindJSON(&input); err != nil {
+	if err := ctx.BindJSON(&request); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Получаем id пользователя
 	userId, exists := ctx.Get("userId")
 	if !exists {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "no userId header"})
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "No userId header"})
 		return
 	}
 
 	userIDInt, ok := userId.(int)
 	if !ok {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "invalid userId type"})
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid userId type"})
 		return
 	}
 
-	// Получаем id слота по имени
-	slotId, err := h.slotService.GetSlot(input.Name)
+	slotId, err := h.slotService.GetSlot(request.Name)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Добавляем баланс в зависимости от коэф.
-	winAmount := int(input.BetAmount * input.Coefficient)
+	winAmount := int(request.BetAmount * request.Coefficient)
 	err = h.userService.TopUpBalance(userIDInt, winAmount)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -61,35 +55,35 @@ func (h *GameHandler) CreateGame(ctx *gin.Context) {
 	game := model.Game{
 		UserId:      userIDInt,
 		SlotId:      slotId,
-		Name:        input.Name,
-		BetAmount:   int(input.BetAmount),
-		Coefficient: input.Coefficient,
+		Name:        request.Name,
+		BetAmount:   int(request.BetAmount),
+		Coefficient: request.Coefficient,
 		WinAmount:   winAmount,
 		CreatedDate: time.Now().Format("2006-01-02 15:04:05"),
 	}
 
-	gameID, err := h.gameService.CreateGame(userIDInt, slotId, game)
+	gameId, err := h.gameService.CreateGame(userIDInt, slotId, game)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "transaction logging failed"})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Transaction logging failed"})
 		return
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"status":  "completed",
-		"game_id": gameID,
+		"message": "Game successfully registered",
+		"game_id": gameId,
 	})
 }
 
 func (h *GameHandler) GetGames(ctx *gin.Context) {
 	userId, exists := ctx.Get("userId")
 	if !exists {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "no userId header"})
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "No userId header"})
 		return
 	}
 
 	userIDInt, ok := userId.(int)
 	if !ok {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "invalid userId type"})
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid userId type"})
 		return
 	}
 
@@ -99,7 +93,20 @@ func (h *GameHandler) GetGames(ctx *gin.Context) {
 		return
 	}
 
+	var gameHistory []dto.GameResponse
+	for _, game := range gameData {
+		gameHistory = append(gameHistory, dto.GameResponse{
+			Id:          game.Id,
+			Name:        game.Name,
+			BetAmount:   float64(game.BetAmount),
+			Coefficient: game.Coefficient,
+			WinAmount:   float64(game.WinAmount),
+			CreatedDate: game.CreatedDate,
+		})
+	}
+
 	ctx.JSON(http.StatusOK, gin.H{
-		"game": gameData,
+		"message":      "Games successfully retrieved",
+		"game_history": gameHistory,
 	})
 }

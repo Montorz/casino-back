@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"casino-back/internal/app/handler/dto"
 	"casino-back/internal/app/model"
 	"casino-back/internal/app/service"
 	"github.com/gin-gonic/gin"
@@ -20,34 +21,31 @@ func NewTransactionHandler(userService *service.UserService, transactionService 
 func (h *TransactionHandler) CreateTransaction(ctx *gin.Context) {
 	userId, exists := ctx.Get("userId")
 	if !exists {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "no userId header"})
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "No userId header"})
 		return
 	}
 
 	userIDInt, ok := userId.(int)
 	if !ok {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "invalid userId type"})
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid userId type"})
 		return
 	}
 
-	var input struct {
-		Type   string `json:"type" binding:"required"`
-		Amount int    `json:"amount" binding:"required"`
-	}
+	var request dto.TransactionRequest
 
-	if err := ctx.BindJSON(&input); err != nil {
+	if err := ctx.BindJSON(&request); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	var err error
-	switch input.Type {
+	switch request.Type {
 	case "Пополнение":
-		err = h.userService.TopUpBalance(userIDInt, input.Amount)
+		err = h.userService.TopUpBalance(userIDInt, request.Amount)
 	case "Снятие":
-		err = h.userService.WithdrawBalance(userIDInt, input.Amount)
+		err = h.userService.WithdrawBalance(userIDInt, request.Amount)
 	default:
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid operation type"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid operation type"})
 		return
 	}
 
@@ -58,19 +56,19 @@ func (h *TransactionHandler) CreateTransaction(ctx *gin.Context) {
 
 	transaction := model.Transaction{
 		UserId:      userIDInt,
-		Type:        input.Type,
-		Amount:      input.Amount,
+		Type:        request.Type,
+		Amount:      request.Amount,
 		CreatedDate: time.Now().Format("2006-01-02 15:04:05"),
 	}
 
 	transactionID, err := h.transactionService.CreateTransaction(userIDInt, transaction)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "transaction logging failed"})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Transaction logging failed"})
 		return
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"status":         "completed",
+		"message":        "Transaction successfully registered",
 		"transaction_id": transactionID,
 	})
 }
@@ -78,13 +76,13 @@ func (h *TransactionHandler) CreateTransaction(ctx *gin.Context) {
 func (h *TransactionHandler) GetTransactions(ctx *gin.Context) {
 	userId, exists := ctx.Get("userId")
 	if !exists {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "no userId header"})
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "No userId header"})
 		return
 	}
 
 	userIDInt, ok := userId.(int)
 	if !ok {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "invalid userId type"})
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid userId type"})
 		return
 	}
 
@@ -94,7 +92,18 @@ func (h *TransactionHandler) GetTransactions(ctx *gin.Context) {
 		return
 	}
 
+	var transactionHistory []dto.TransactionResponse
+	for _, transaction := range transactionData {
+		transactionHistory = append(transactionHistory, dto.TransactionResponse{
+			Id:          transaction.Id,
+			Type:        transaction.Type,
+			Amount:      transaction.Amount,
+			CreatedDate: transaction.CreatedDate,
+		})
+	}
+
 	ctx.JSON(http.StatusOK, gin.H{
-		"transaction": transactionData,
+		"message":             "Transactions successfully retrieved",
+		"transaction_history": transactionHistory,
 	})
 }

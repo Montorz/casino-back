@@ -1,9 +1,8 @@
 package service
 
 import (
-	"casino-back/internal/app/model"
+	"casino-back/internal/app/logger"
 	"crypto/sha1"
-	"errors"
 	"fmt"
 	"github.com/golang-jwt/jwt/v5"
 	"time"
@@ -17,14 +16,14 @@ func NewAuthService(authRepository IUserRepository) *AuthService {
 	return &AuthService{authRepository: authRepository}
 }
 
-func (s *AuthService) CreateUser(user model.User) (int, error) {
-	user.Password = s.generatePasswordHash(user.Password)
-	return s.authRepository.CreateUser(user)
+func (s *AuthService) CreateUser(name, login, password string) (int, error) {
+	password = s.generatePasswordHash(password)
+	return s.authRepository.CreateUser(name, login, password)
 }
 
-func (s *AuthService) GetUser(login string, password string) (int, error) {
+func (s *AuthService) GetUserId(login, password string) (int, error) {
 	password = s.generatePasswordHash(password)
-	return s.authRepository.GetUser(login, password)
+	return s.authRepository.GetUserId(login, password)
 }
 
 func (s *AuthService) generatePasswordHash(password string) string {
@@ -43,7 +42,7 @@ const (
 )
 
 func (s *AuthService) GenerateToken(login, password string) (string, error) {
-	id, err := s.authRepository.GetUser(login, s.generatePasswordHash(password))
+	id, err := s.authRepository.GetUserId(login, s.generatePasswordHash(password))
 
 	if err != nil {
 		return "", err
@@ -63,6 +62,7 @@ func (s *AuthService) GenerateToken(login, password string) (string, error) {
 func (s *AuthService) ParseToken(accessToken string) (int, error) {
 	token, err := jwt.ParseWithClaims(accessToken, &tokenClaims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			logger.InfoKV("service err", "err", fmt.Sprintf("unexpected signing method: %v", token.Header["alg"]))
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
 
@@ -74,7 +74,8 @@ func (s *AuthService) ParseToken(accessToken string) (int, error) {
 
 	claims, ok := token.Claims.(*tokenClaims)
 	if !ok || !token.Valid {
-		return 0, errors.New("token claims are not of type *tokenClaims")
+		logger.InfoKV("service error", "err", "token claims are not of type *tokenClaims")
+		return 0, fmt.Errorf("invalid token or token claims")
 	}
 
 	return claims.UserId, nil
