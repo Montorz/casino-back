@@ -16,9 +16,9 @@ func NewAuthService(authRepository IUserRepository) *AuthService {
 	return &AuthService{authRepository: authRepository}
 }
 
-func (s *AuthService) CreateUser(name, login, password string) (int, error) {
+func (s *AuthService) CreateUser(name, login, password, avatarURL string) (int, error) {
 	password = s.generatePasswordHash(password)
-	return s.authRepository.CreateUser(name, login, password)
+	return s.authRepository.CreateUser(name, login, password, avatarURL)
 }
 
 func (s *AuthService) GetUserId(login, password string) (int, error) {

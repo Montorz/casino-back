@@ -45,6 +45,7 @@ func main() {
 	})
 
 	r.Use(corsConfig)
+	r.Static("/uploads", "./uploads")
 
 	auth := r.Group("/auth")
 	{
@@ -58,6 +59,7 @@ func main() {
 		{
 			account.GET("/data", userHandler.GetUserData)
 			account.GET("/balance", userHandler.GetUserBalance)
+			account.POST("/avatar", userHandler.UpdateAvatar)
 		}
 
 		transaction := api.Group("/transaction")

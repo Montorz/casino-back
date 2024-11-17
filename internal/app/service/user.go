@@ -7,11 +7,12 @@ import (
 )
 
 type IUserRepository interface {
-	CreateUser(name, login, password string) (int, error)
+	CreateUser(name, login, password, avatarURL string) (int, error)
 	GetUserId(login, password string) (int, error)
 	GetUserBalance(userId int) (int, error)
 	UpdateUserBalance(userId, newBalance int) error
 	GetUserData(userId int) (*model.User, error)
+	UpdateAvatarURL(userId int, avatarURL string) error
 }
 
 type UserService struct {
@@ -57,4 +58,8 @@ func (s *UserService) WithdrawBalance(userId int, amount int) error {
 
 func (s *UserService) GetUserData(userId int) (*model.User, error) {
 	return s.userRepository.GetUserData(userId)
+}
+
+func (s *UserService) UpdateAvatarURL(userId int, avatarURL string) error {
+	return s.userRepository.UpdateAvatarURL(userId, avatarURL)
 }

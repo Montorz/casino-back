@@ -24,7 +24,8 @@ func (h *AuthHandler) SignUp(ctx *gin.Context) {
 		return
 	}
 
-	userId, err := h.authService.CreateUser(request.Name, request.Login, request.Password)
+	request.AvatarURL = "/uploads/avatars/default.png"
+	userId, err := h.authService.CreateUser(request.Name, request.Login, request.Password, request.AvatarURL)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

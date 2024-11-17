@@ -1,10 +1,11 @@
 CREATE TABLE users
 (
-    id       SERIAL PRIMARY KEY UNIQUE,
-    name     VARCHAR NOT NULL,
-    login    VARCHAR NOT NULL UNIQUE,
-    password VARCHAR NOT NULL,
-    balance  INT     NOT NULL
+    id         SERIAL  NOT NULL UNIQUE,
+    name       VARCHAR NOT NULL,
+    login      VARCHAR NOT NULL UNIQUE,
+    password   VARCHAR NOT NULL,
+    balance    INTEGER NOT NULL,
+    avatar_url VARCHAR
 );
 
 CREATE TABLE transactions
