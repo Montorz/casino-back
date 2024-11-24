@@ -15,11 +15,11 @@ func NewGameRepository(db *sqlx.DB) *GameRepository {
 	return &GameRepository{db: db}
 }
 
-func (r *GameRepository) CreateGame(userId int, slotId int, game model.Game) (int, error) {
+func (r *GameRepository) CreateGame(userId int, game model.Game) (int, error) {
 	var id int
 
-	query := fmt.Sprintf("INSERT INTO %s (user_id, slot_id, name, bet_amount, coefficient, win_amount, created_date) values ($1, $2, $3, $4, $5, $6, $7) RETURNING id", "games")
-	row := r.db.QueryRow(query, userId, slotId, game.Name, game.BetAmount, game.Coefficient, game.WinAmount, game.CreatedDate)
+	query := fmt.Sprintf("INSERT INTO %s (user_id, name, bet_amount, coefficient, win_amount, created_date) values ($1, $2, $3, $4, $5, $6) RETURNING id", "games")
+	row := r.db.QueryRow(query, userId, game.Name, game.BetAmount, game.Coefficient, game.WinAmount, game.CreatedDate)
 
 	if err := row.Scan(&id); err != nil {
 		logger.InfoKV("repository error", "err", err)
