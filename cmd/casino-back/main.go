@@ -52,12 +52,13 @@ func main() {
 		auth.POST("/sign-in", authHandler.SignIn)
 	}
 
+	websocket := r.Group("/ws")
+	{
+		websocket.GET("/balance", webSocketHandler.StreamBalance)
+	}
+
 	api := r.Group("/api", authHandler.UserIdentity)
 	{
-		websocket := api.Group("/ws")
-		{
-			websocket.GET("/balance", webSocketHandler.StreamBalance)
-		}
 
 		account := api.Group("/account")
 		{
