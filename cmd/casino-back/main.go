@@ -33,6 +33,8 @@ func main() {
 	gameHandler := handler.NewGameHandler(gameService, userService)
 	authHandler := handler.NewAuthHandler(authService)
 
+	webSocketHandler := handler.NewWebSocketHandler(userService)
+
 	r := gin.New()
 	corsConfig := cors.New(cors.Options{
 		AllowedOrigins:   []string{"http://localhost:5173"},
@@ -52,6 +54,11 @@ func main() {
 
 	api := r.Group("/api", authHandler.UserIdentity)
 	{
+		websocket := api.Group("/ws")
+		{
+			websocket.GET("/balance", webSocketHandler.StreamBalance)
+		}
+
 		account := api.Group("/account")
 		{
 			account.GET("/data", userHandler.GetUserData)

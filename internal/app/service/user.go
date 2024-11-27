@@ -23,7 +23,7 @@ func NewUserService(userRepository IUserRepository) *UserService {
 	return &UserService{userRepository: userRepository}
 }
 
-func (s *UserService) GetBalance(userId int) (int, error) {
+func (s *UserService) GetUserBalance(userId int) (int, error) {
 	return s.userRepository.GetUserBalance(userId)
 }
 
@@ -32,7 +32,7 @@ func (s *UserService) UpdateBalance(userId int, newBalance int) error {
 }
 
 func (s *UserService) TopUpBalance(userId int, amount int) error {
-	balance, err := s.GetBalance(userId)
+	balance, err := s.GetUserBalance(userId)
 	if err != nil {
 		return err
 	}
@@ -42,7 +42,7 @@ func (s *UserService) TopUpBalance(userId int, amount int) error {
 }
 
 func (s *UserService) WithdrawBalance(userId int, amount int) error {
-	balance, err := s.GetBalance(userId)
+	balance, err := s.GetUserBalance(userId)
 	if err != nil {
 		return err
 	}

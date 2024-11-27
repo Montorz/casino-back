@@ -5,6 +5,7 @@ go 1.23.2
 require (
 	github.com/gin-gonic/gin v1.10.0
 	github.com/golang-jwt/jwt/v5 v5.2.1
+	github.com/gorilla/websocket v1.5.3
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/lib/pq v1.10.9
 	github.com/rs/cors/wrapper/gin v0.0.0-20240830163046-1084d89a1692

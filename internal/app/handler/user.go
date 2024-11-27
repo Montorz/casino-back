@@ -62,7 +62,7 @@ func (h *UserHandler) GetUserBalance(ctx *gin.Context) {
 		return
 	}
 
-	balance, err := h.userService.GetBalance(userIDInt)
+	balance, err := h.userService.GetUserBalance(userIDInt)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
