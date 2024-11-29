@@ -3,17 +3,20 @@ package handler
 import (
 	"casino-back/internal/app/handler/dto"
 	"casino-back/internal/app/service"
+	"casino-back/pkg/token"
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 	"net/http"
-	"strings"
+	"time"
 )
 
 type AuthHandler struct {
-	authService *service.AuthService
+	userService     *service.UserService
+	jwtTokenManager *token.JwtTokenManager
 }
 
-func NewAuthHandler(authService *service.AuthService) *AuthHandler {
-	return &AuthHandler{authService: authService}
+func NewAuthHandler(userService *service.UserService, jwtTokenManager *token.JwtTokenManager) *AuthHandler {
+	return &AuthHandler{userService: userService, jwtTokenManager: jwtTokenManager}
 }
 
 func (h *AuthHandler) SignUp(ctx *gin.Context) {
@@ -25,7 +28,7 @@ func (h *AuthHandler) SignUp(ctx *gin.Context) {
 	}
 
 	request.AvatarURL = "/uploads/avatars/default.png"
-	userId, err := h.authService.CreateUser(request.Name, request.Login, request.Password, request.AvatarURL)
+	userId, err := h.userService.CreateUser(request.Name, request.Login, request.Password, request.AvatarURL)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -45,7 +48,21 @@ func (h *AuthHandler) SignIn(ctx *gin.Context) {
 		return
 	}
 
-	token, err := h.authService.GenerateToken(response.Login, response.Password)
+	userId, err := h.userService.GetUserId(response.Login, response.Password)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	claims := &dto.JwtUserClaims{
+		RegisteredClaims: jwt.RegisteredClaims{
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * time.Duration(h.jwtTokenManager.Lifetime))),
+		},
+		UserId: userId,
+	}
+
+	tokenString, err := h.jwtTokenManager.Generate(claims)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -53,28 +70,6 @@ func (h *AuthHandler) SignIn(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, map[string]interface{}{
 		"message": "User successfully authenticated",
-		"token":   token,
+		"token":   tokenString,
 	})
-}
-
-func (h *AuthHandler) UserIdentity(ctx *gin.Context) {
-	header := ctx.GetHeader("Authorization")
-	if header == "" {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "No authorization header"})
-		return
-	}
-
-	headerParts := strings.Split(header, " ")
-	if len(headerParts) != 2 {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid authorization header"})
-		return
-	}
-
-	userId, err := h.authService.ParseToken(headerParts[1])
-	if err != nil {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid authorization header"})
-		return
-	}
-
-	ctx.Set("userId", userId)
 }

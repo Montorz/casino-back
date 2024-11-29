@@ -10,12 +10,12 @@ import (
 )
 
 type TransactionHandler struct {
-	userService        *service.UserService
 	transactionService *service.TransactionService
+	userService        *service.UserService
 }
 
-func NewTransactionHandler(userService *service.UserService, transactionService *service.TransactionService) *TransactionHandler {
-	return &TransactionHandler{userService: userService, transactionService: transactionService}
+func NewTransactionHandler(transactionService *service.TransactionService, userService *service.UserService) *TransactionHandler {
+	return &TransactionHandler{transactionService: transactionService, userService: userService}
 }
 
 func (h *TransactionHandler) CreateTransaction(ctx *gin.Context) {

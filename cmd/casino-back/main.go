@@ -5,6 +5,8 @@ import (
 	"casino-back/internal/app/logger"
 	"casino-back/internal/app/repository"
 	"casino-back/internal/app/service"
+	"casino-back/pkg/middleware"
+	"casino-back/pkg/token"
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
@@ -19,6 +21,8 @@ func main() {
 	}
 	logger.InfoKV("db connected")
 
+	jwtTokenManager := token.NewJwtTokenGenerator("secret_key", 24)
+
 	userRepository := repository.NewUserRepository(db)
 	transactionRepository := repository.NewTransactionRepository(db)
 	gameRepository := repository.NewGameRepository(db)
@@ -26,14 +30,12 @@ func main() {
 	userService := service.NewUserService(userRepository)
 	transactionService := service.NewTransactionService(transactionRepository)
 	gameService := service.NewGameService(gameRepository)
-	authService := service.NewAuthService(userRepository)
 
 	userHandler := handler.NewUserHandler(userService)
-	transactionHandler := handler.NewTransactionHandler(userService, transactionService)
+	transactionHandler := handler.NewTransactionHandler(transactionService, userService)
 	gameHandler := handler.NewGameHandler(gameService, userService)
-	authHandler := handler.NewAuthHandler(authService)
 
-	webSocketHandler := handler.NewWebSocketHandler(userService)
+	authHandler := handler.NewAuthHandler(userService, jwtTokenManager)
 
 	r := gin.New()
 	corsConfig := cors.New(cors.Options{
@@ -52,12 +54,7 @@ func main() {
 		auth.POST("/sign-in", authHandler.SignIn)
 	}
 
-	websocket := r.Group("/ws")
-	{
-		websocket.GET("/balance", webSocketHandler.StreamBalance)
-	}
-
-	api := r.Group("/api", authHandler.UserIdentity)
+	api := r.Group("/api", middleware.JwtAuth(jwtTokenManager))
 	{
 
 		account := api.Group("/account")
