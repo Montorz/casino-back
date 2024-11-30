@@ -2,5 +2,10 @@
   <profile version="1.0">
     <option name="myName" value="Project Default" />
     <inspection_tool class="GoDeprecation" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="GoDfaErrorMayBeNotNil" enabled="true" level="WARNING" enabled_by_default="true">
+      <methods>
+        <method importPath="casino-back/internal/app/service" receiver="*UserService" name="GetUserData" />
+      </methods>
+    </inspection_tool>
   </profile>
 </component>
