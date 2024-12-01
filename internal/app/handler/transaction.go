@@ -19,31 +19,23 @@ func NewTransactionHandler(transactionService *service.TransactionService, userS
 }
 
 func (h *TransactionHandler) CreateTransaction(ctx *gin.Context) {
-	userId, exists := ctx.Get("userId")
-	if !exists {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "No userId header"})
-		return
-	}
-
-	userIDInt, ok := userId.(int)
-	if !ok {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid userId type"})
+	userID, err := getUserID(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	var request dto.TransactionRequest
-
-	if err := ctx.BindJSON(&request); err != nil {
+	if err = ctx.BindJSON(&request); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	var err error
 	switch request.Type {
 	case "Пополнение":
-		err = h.userService.TopUpBalance(userIDInt, request.Amount)
+		err = h.userService.TopUpBalance(userID, request.Amount)
 	case "Снятие":
-		err = h.userService.WithdrawBalance(userIDInt, request.Amount)
+		err = h.userService.WithdrawBalance(userID, request.Amount)
 	default:
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid operation type"})
 		return
@@ -55,13 +47,13 @@ func (h *TransactionHandler) CreateTransaction(ctx *gin.Context) {
 	}
 
 	transaction := model.Transaction{
-		UserId:      userIDInt,
+		UserId:      userID,
 		Type:        request.Type,
 		Amount:      request.Amount,
 		CreatedDate: time.Now().Format("2006-01-02 15:04:05"),
 	}
 
-	transactionID, err := h.transactionService.CreateTransaction(userIDInt, transaction)
+	transactionID, err := h.transactionService.CreateTransaction(userID, transaction)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Transaction logging failed"})
 		return
@@ -74,19 +66,13 @@ func (h *TransactionHandler) CreateTransaction(ctx *gin.Context) {
 }
 
 func (h *TransactionHandler) GetTransactions(ctx *gin.Context) {
-	userId, exists := ctx.Get("userId")
-	if !exists {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "No userId header"})
+	userID, err := getUserID(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	userIDInt, ok := userId.(int)
-	if !ok {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid userId type"})
-		return
-	}
-
-	transactionData, err := h.transactionService.GetTransactions(userIDInt)
+	transactionData, err := h.transactionService.GetTransactions(userID)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

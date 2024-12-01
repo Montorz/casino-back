@@ -22,7 +22,7 @@ func (r *TransactionRepository) CreateTransaction(userId int, transaction model.
 	row := r.db.QueryRow(query, userId, transaction.Type, transaction.Amount, transaction.CreatedDate)
 
 	if err := row.Scan(&id); err != nil {
-		logger.InfoKV("repository error", "err", err)
+		logger.InfoKV("transaction repository error", "err", err)
 		return 0, err
 	}
 
@@ -36,7 +36,7 @@ func (r *TransactionRepository) GetTransactions(userId int) ([]model.Transaction
 	err := r.db.Select(&transactions, query, userId)
 
 	if err != nil {
-		logger.InfoKV("repository error", "err", err)
+		logger.InfoKV("transaction repository error", "err", err)
 		return nil, err
 	}
 

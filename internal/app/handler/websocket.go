@@ -30,25 +30,25 @@ func NewWebSocketHandler(userService *service.UserService) *WebSocketHandler {
 	}
 }
 
-func (h *WebSocketHandler) HandleWebSocket(c *gin.Context) {
-	userId, exists := c.Get("userId")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "No userId header"})
+func (h *WebSocketHandler) HandleWebSocket(ctx *gin.Context) {
+	userID, err := getUserID(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	userData, err := h.userService.GetUserData(userId.(int))
+	userData, err := h.userService.GetUserData(userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user data"})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user data"})
 		return
 	}
 
 	name := userData.Name
 	avatarURL := userData.AvatarURL
 
-	conn, err := h.upgrader.Upgrade(c.Writer, c.Request, nil)
+	conn, err := h.upgrader.Upgrade(ctx.Writer, ctx.Request, nil)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upgrade connection"})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upgrade connection"})
 		return
 	}
 

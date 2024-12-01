@@ -45,15 +45,9 @@ func (h *GameHandler) GetGameResult(ctx *gin.Context) {
 }
 
 func (h *GameHandler) PlaceBet(ctx *gin.Context) {
-	userId, exists := ctx.Get("userId")
-	if !exists {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "User ID not found"})
-		return
-	}
-
-	userIDInt, ok := userId.(int)
-	if !ok {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid userId type"})
+	userID, err := getUserID(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -63,7 +57,7 @@ func (h *GameHandler) PlaceBet(ctx *gin.Context) {
 		return
 	}
 
-	err := h.userService.WithdrawBalance(userIDInt, response.BetAmount)
+	err = h.userService.WithdrawBalance(userID, response.BetAmount)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -82,27 +76,21 @@ func (h *GameHandler) CreateGame(ctx *gin.Context) {
 		return
 	}
 
-	userId, exists := ctx.Get("userId")
-	if !exists {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "No userId header"})
-		return
-	}
-
-	userIDInt, ok := userId.(int)
-	if !ok {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid userId type"})
+	userID, err := getUserID(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	winAmount := int(request.BetAmount * request.Coefficient)
-	err := h.userService.TopUpBalance(userIDInt, winAmount)
+	err = h.userService.TopUpBalance(userID, winAmount)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	game := model.Game{
-		UserId:      userIDInt,
+		UserId:      userID,
 		Name:        request.Name,
 		BetAmount:   int(request.BetAmount),
 		Coefficient: request.Coefficient,
@@ -110,7 +98,7 @@ func (h *GameHandler) CreateGame(ctx *gin.Context) {
 		CreatedDate: time.Now().Format("2006-01-02 15:04:05"),
 	}
 
-	gameId, err := h.gameService.CreateGame(userIDInt, game)
+	gameId, err := h.gameService.CreateGame(userID, game)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Transaction logging failed"})
 		return
@@ -123,19 +111,13 @@ func (h *GameHandler) CreateGame(ctx *gin.Context) {
 }
 
 func (h *GameHandler) GetGames(ctx *gin.Context) {
-	userId, exists := ctx.Get("userId")
-	if !exists {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "No userId header"})
+	userID, err := getUserID(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	userIDInt, ok := userId.(int)
-	if !ok {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid userId type"})
-		return
-	}
-
-	gameData, err := h.gameService.GetGames(userIDInt)
+	gameData, err := h.gameService.GetGames(userID)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

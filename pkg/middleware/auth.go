@@ -11,6 +11,7 @@ import (
 )
 
 const AuthHeaderName = "Authorization"
+const contextUserId = "userId"
 
 type TokenDecoder interface {
 	Valid(tokenString string) (bool, error)
@@ -69,7 +70,7 @@ func JwtAuth(tokenDecoder TokenDecoder) gin.HandlerFunc {
 			&dto.JwtUserClaims{},
 		)
 		if claims, ok := decodeToken.Claims.(*dto.JwtUserClaims); ok {
-			ginCtx.Set("userId", claims.UserId)
+			ginCtx.Set(contextUserId, claims.UserId)
 		}
 
 		ginCtx.Next()

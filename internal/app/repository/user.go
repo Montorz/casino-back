@@ -22,7 +22,7 @@ func (r *UserRepository) CreateUser(name, login, password, avatarURL string) (in
 	row := r.db.QueryRow(query, name, login, password, balance, avatarURL)
 
 	if err := row.Scan(&id); err != nil {
-		logger.InfoKV("repository error", "err", err)
+		logger.InfoKV("user repository error", "err", err)
 		return 0, err
 	}
 
@@ -36,7 +36,7 @@ func (r *UserRepository) GetUserId(login, password string) (int, error) {
 	err := r.db.Get(&id, query, login, password)
 
 	if err != nil {
-		logger.InfoKV("repository error", "err", err)
+		logger.InfoKV("user repository error", "err", err)
 		return 0, err
 	}
 
@@ -50,7 +50,7 @@ func (r *UserRepository) GetUserBalance(userId int) (int, error) {
 	err := r.db.Get(&balance, query, userId)
 
 	if err != nil {
-		logger.InfoKV("repository error", "err", err)
+		logger.InfoKV("user repository error", "err", err)
 		return 0, err
 	}
 
@@ -62,7 +62,7 @@ func (r *UserRepository) UpdateUserBalance(userId, newBalance int) error {
 	_, err := r.db.Exec(query, newBalance, userId)
 
 	if err != nil {
-		logger.InfoKV("repository error", "err", err)
+		logger.InfoKV("user repository error", "err", err)
 		return err
 	}
 
@@ -76,7 +76,7 @@ func (r *UserRepository) GetUserData(userId int) (*model.User, error) {
 	err := r.db.Get(&user, query, userId)
 
 	if err != nil {
-		logger.InfoKV("repository error", "err", err)
+		logger.InfoKV("user repository error", "err", err)
 		return nil, err
 	}
 
@@ -87,7 +87,7 @@ func (r *UserRepository) UpdateAvatarURL(userId int, avatarURL string) error {
 	query := fmt.Sprintf("UPDATE %s SET avatar_url = $1 WHERE id = $2", "users")
 	_, err := r.db.Exec(query, avatarURL, userId)
 	if err != nil {
-		logger.InfoKV("repository error", "err", err)
+		logger.InfoKV("user repository error", "err", err)
 		return err
 	}
 

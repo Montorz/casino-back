@@ -75,9 +75,9 @@ func (h *UserHandler) GetUserBalance(ctx *gin.Context) {
 }
 
 func (h *UserHandler) UpdateAvatar(ctx *gin.Context) {
-	userId, exists := ctx.Get("userId")
-	if !exists {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+	userID, err := getUserID(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -87,8 +87,8 @@ func (h *UserHandler) UpdateAvatar(ctx *gin.Context) {
 		return
 	}
 
-	avatarDir := fmt.Sprintf("./uploads/avatars/%v", userId)
-	if err := os.MkdirAll(avatarDir, os.ModePerm); err != nil {
+	avatarDir := fmt.Sprintf("./uploads/avatars/%v", userID)
+	if err = os.MkdirAll(avatarDir, os.ModePerm); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create directory"})
 		return
 	}
@@ -97,14 +97,14 @@ func (h *UserHandler) UpdateAvatar(ctx *gin.Context) {
 	newFileName := fmt.Sprintf("avatar%s", ext)
 	filePath := filepath.Join(avatarDir, newFileName)
 
-	if err := ctx.SaveUploadedFile(file, filePath); err != nil {
+	if err = ctx.SaveUploadedFile(file, filePath); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
 		return
 	}
 
-	avatarURL := fmt.Sprintf("/uploads/avatars/%v/%s", userId, newFileName)
+	avatarURL := fmt.Sprintf("/uploads/avatars/%v/%s", userID, newFileName)
 
-	if err := h.userService.UpdateAvatarURL(userId.(int), avatarURL); err != nil {
+	if err = h.userService.UpdateAvatarURL(userID, avatarURL); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update avatar URL"})
 		return
 	}
