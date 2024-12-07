@@ -7,7 +7,7 @@ type BetResponse struct {
 type GameRequest struct {
 	Name        string  `json:"name" binding:"required"`
 	BetAmount   float64 `json:"bet_amount" binding:"required"`
-	Coefficient float64 `json:"coefficient"` // не используем binding:"required" так как может быть равен 0 при проигрыше
+	Coefficient float64 `json:"coefficient,omitempty"`
 }
 
 type GameResponse struct {

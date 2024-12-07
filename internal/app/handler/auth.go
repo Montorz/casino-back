@@ -19,18 +19,20 @@ func NewAuthHandler(userService *service.UserService, jwtTokenManager *token.Jwt
 	return &AuthHandler{userService: userService, jwtTokenManager: jwtTokenManager}
 }
 
+const defaultAvatarURL = "/uploads/avatars/default.png"
+
 func (h *AuthHandler) SignUp(ctx *gin.Context) {
-	var request dto.UserRequest
+	var request dto.SignUpRequest
 
 	if err := ctx.BindJSON(&request); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "bad request"})
 		return
 	}
 
-	request.AvatarURL = "/uploads/avatars/default.png"
+	request.AvatarURL = defaultAvatarURL
 	userId, err := h.userService.CreateUser(request.Name, request.Login, request.Password, request.AvatarURL)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "can't create user"})
 		return
 	}
 
@@ -41,16 +43,16 @@ func (h *AuthHandler) SignUp(ctx *gin.Context) {
 }
 
 func (h *AuthHandler) SignIn(ctx *gin.Context) {
-	var response dto.UserResponse
+	var request dto.SignInRequest
 
-	if err := ctx.BindJSON(&response); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := ctx.BindJSON(&request); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "bad request"})
 		return
 	}
 
-	userId, err := h.userService.GetUserId(response.Login, response.Password)
+	userId, err := h.userService.GetUserId(request.Login, request.Password)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "can't get user"})
 		return
 	}
 
@@ -64,7 +66,7 @@ func (h *AuthHandler) SignIn(ctx *gin.Context) {
 
 	tokenString, err := h.jwtTokenManager.Generate(claims)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "can't generate token"})
 		return
 	}
 

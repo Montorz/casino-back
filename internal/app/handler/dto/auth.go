@@ -2,14 +2,14 @@ package dto
 
 import "github.com/golang-jwt/jwt/v5"
 
-type UserRequest struct {
+type SignUpRequest struct {
 	Name      string `json:"name" binding:"required"`
 	Login     string `json:"login" binding:"required"`
 	Password  string `json:"password" binding:"required"`
 	AvatarURL string `json:"avatar_url,omitempty"`
 }
 
-type UserResponse struct {
+type SignInRequest struct {
 	Login    string `json:"login" binding:"required"`
 	Password string `json:"password" binding:"required"`
 }

@@ -19,21 +19,15 @@ func NewUserHandler(userService *service.UserService) *UserHandler {
 }
 
 func (h *UserHandler) GetUserData(ctx *gin.Context) {
-	userId, exists := ctx.Get("userId")
-	if !exists {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "No userId header"})
-		return
-	}
-
-	userIDInt, ok := userId.(int)
-	if !ok {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid userId type"})
-		return
-	}
-
-	userData, err := h.userService.GetUserData(userIDInt)
+	userID, err := getUserID(ctx)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	userData, err := h.userService.GetUserData(userID)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "get userData failed"})
 		return
 	}
 
@@ -50,21 +44,15 @@ func (h *UserHandler) GetUserData(ctx *gin.Context) {
 }
 
 func (h *UserHandler) GetUserBalance(ctx *gin.Context) {
-	userId, exists := ctx.Get("userId")
-	if !exists {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "No userId header"})
-		return
-	}
-
-	userIDInt, ok := userId.(int)
-	if !ok {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid userId type"})
-		return
-	}
-
-	balance, err := h.userService.GetUserBalance(userIDInt)
+	userID, err := getUserID(ctx)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	balance, err := h.userService.GetUserBalance(userID)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "get userBalance failed"})
 		return
 	}
 
@@ -77,19 +65,19 @@ func (h *UserHandler) GetUserBalance(ctx *gin.Context) {
 func (h *UserHandler) UpdateAvatar(ctx *gin.Context) {
 	userID, err := getUserID(ctx)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	file, err := ctx.FormFile("avatar")
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Avatar file is required"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "avatar file is required"})
 		return
 	}
 
 	avatarDir := fmt.Sprintf("./uploads/avatars/%v", userID)
 	if err = os.MkdirAll(avatarDir, os.ModePerm); err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create directory"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "failed to create directory"})
 		return
 	}
 
@@ -98,14 +86,14 @@ func (h *UserHandler) UpdateAvatar(ctx *gin.Context) {
 	filePath := filepath.Join(avatarDir, newFileName)
 
 	if err = ctx.SaveUploadedFile(file, filePath); err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "failed to save file"})
 		return
 	}
 
 	avatarURL := fmt.Sprintf("/uploads/avatars/%v/%s", userID, newFileName)
 
 	if err = h.userService.UpdateAvatarURL(userID, avatarURL); err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update avatar URL"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "failed to update avatar URL"})
 		return
 	}
 

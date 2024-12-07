@@ -21,13 +21,13 @@ func NewTransactionHandler(transactionService *service.TransactionService, userS
 func (h *TransactionHandler) CreateTransaction(ctx *gin.Context) {
 	userID, err := getUserID(ctx)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	var request dto.TransactionRequest
 	if err = ctx.BindJSON(&request); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "bad request"})
 		return
 	}
 
@@ -37,12 +37,12 @@ func (h *TransactionHandler) CreateTransaction(ctx *gin.Context) {
 	case "Снятие":
 		err = h.userService.WithdrawBalance(userID, request.Amount)
 	default:
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid operation type"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid operation type"})
 		return
 	}
 
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -55,7 +55,7 @@ func (h *TransactionHandler) CreateTransaction(ctx *gin.Context) {
 
 	transactionID, err := h.transactionService.CreateTransaction(userID, transaction)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Transaction logging failed"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "create transaction failed"})
 		return
 	}
 
@@ -68,13 +68,13 @@ func (h *TransactionHandler) CreateTransaction(ctx *gin.Context) {
 func (h *TransactionHandler) GetTransactions(ctx *gin.Context) {
 	userID, err := getUserID(ctx)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	transactionData, err := h.transactionService.GetTransactions(userID)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "get transactions failed"})
 		return
 	}
 

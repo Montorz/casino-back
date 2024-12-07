@@ -33,13 +33,13 @@ func NewWebSocketHandler(userService *service.UserService) *WebSocketHandler {
 func (h *WebSocketHandler) HandleWebSocket(ctx *gin.Context) {
 	userID, err := getUserID(ctx)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	userData, err := h.userService.GetUserData(userID)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user data"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "failed to get user data"})
 		return
 	}
 
@@ -48,7 +48,7 @@ func (h *WebSocketHandler) HandleWebSocket(ctx *gin.Context) {
 
 	conn, err := h.upgrader.Upgrade(ctx.Writer, ctx.Request, nil)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upgrade connection"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "failed to upgrade connection"})
 		return
 	}
 

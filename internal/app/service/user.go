@@ -59,7 +59,7 @@ func (s *UserService) generatePasswordHash(password string) string {
 func (s *UserService) TopUpBalance(userId int, amount int) error {
 	balance, err := s.GetUserBalance(userId)
 	if err != nil {
-		return err
+		return fmt.Errorf("can't get balance")
 	}
 	newBalance := balance + amount
 
@@ -69,14 +69,14 @@ func (s *UserService) TopUpBalance(userId int, amount int) error {
 func (s *UserService) WithdrawBalance(userId int, amount int) error {
 	balance, err := s.GetUserBalance(userId)
 	if err != nil {
-		return err
+		return fmt.Errorf("can't get balance")
 	}
 
 	if balance < amount {
-		logger.InfoKV("service error", "err", fmt.Sprintf("insufficient balance: available %d, requested %d", balance, amount))
-		return err
+		logger.ErrorKV("userBalance service error", "err", "insufficient balance")
+		return fmt.Errorf("insufficient balance")
 	}
-	newBalance := balance - amount
 
+	newBalance := balance - amount
 	return s.userRepository.UpdateUserBalance(userId, newBalance)
 }

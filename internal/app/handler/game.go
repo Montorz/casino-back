@@ -21,7 +21,7 @@ func NewGameHandler(gameService *service.GameService, userService *service.UserS
 func (h *GameHandler) GetGameResult(ctx *gin.Context) {
 	gameName := ctx.Param("name")
 	if gameName == "" {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Game name is required"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "game name is required"})
 		return
 	}
 
@@ -29,7 +29,7 @@ func (h *GameHandler) GetGameResult(ctx *gin.Context) {
 	case "crash":
 		crashPoint, err := h.gameService.GetGameResult(gameName)
 		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid game result"})
 			return
 		}
 
@@ -39,7 +39,7 @@ func (h *GameHandler) GetGameResult(ctx *gin.Context) {
 		})
 		return
 	default:
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid game name"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid game name"})
 		return
 	}
 }
@@ -47,19 +47,19 @@ func (h *GameHandler) GetGameResult(ctx *gin.Context) {
 func (h *GameHandler) PlaceBet(ctx *gin.Context) {
 	userID, err := getUserID(ctx)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	var response dto.BetResponse
-	if err := ctx.ShouldBindJSON(&response); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err = ctx.ShouldBindJSON(&response); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "bad response"})
 		return
 	}
 
 	err = h.userService.WithdrawBalance(userID, response.BetAmount)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -72,20 +72,20 @@ func (h *GameHandler) CreateGame(ctx *gin.Context) {
 	var request dto.GameRequest
 
 	if err := ctx.BindJSON(&request); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "bad request"})
 		return
 	}
 
 	userID, err := getUserID(ctx)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	winAmount := int(request.BetAmount * request.Coefficient)
 	err = h.userService.TopUpBalance(userID, winAmount)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -100,7 +100,7 @@ func (h *GameHandler) CreateGame(ctx *gin.Context) {
 
 	gameId, err := h.gameService.CreateGame(userID, game)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Transaction logging failed"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "create game failed"})
 		return
 	}
 
@@ -113,13 +113,13 @@ func (h *GameHandler) CreateGame(ctx *gin.Context) {
 func (h *GameHandler) GetGames(ctx *gin.Context) {
 	userID, err := getUserID(ctx)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	gameData, err := h.gameService.GetGames(userID)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "get games failed"})
 		return
 	}
 
