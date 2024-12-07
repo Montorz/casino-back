@@ -36,7 +36,7 @@ func main() {
 	gameHandler := handler.NewGameHandler(gameService, userService)
 
 	authHandler := handler.NewAuthHandler(userService, jwtTokenManager)
-	webSocketHandler := handler.NewWebSocketHandler(userService)
+	webSocketHandler := handler.NewWebSocketHandler(userService, gameService)
 
 	r := gin.New()
 	corsConfig := cors.New(cors.Options{
@@ -57,8 +57,9 @@ func main() {
 
 	api := r.Group("/api", middleware.JwtAuth(jwtTokenManager))
 	{
-		go webSocketHandler.StartBroadcasting()
-		api.GET("/chat", webSocketHandler.HandleWebSocket)
+		go webSocketHandler.StartChatBroadcasting()
+		api.GET("/chat", webSocketHandler.HandleChatWebSocket)
+		api.GET("/:name", webSocketHandler.HandleGameWebSocket)
 
 		account := api.Group("/account")
 		{

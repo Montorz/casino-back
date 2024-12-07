@@ -7,20 +7,33 @@ import (
 	"github.com/gorilla/websocket"
 	"net/http"
 	"sync"
+	"time"
 )
+
+type Room struct {
+	results chan dto.GameResultMessage
+	clients map[*websocket.Conn]bool
+	mu      sync.Mutex
+}
 
 type WebSocketHandler struct {
 	userService *service.UserService
-	clients     map[*websocket.Conn]bool
+	gameService *service.GameService
+
+	rooms       map[string]*Room
+	chatClients map[*websocket.Conn]bool
 	broadcast   chan dto.ChatMessage
 	mu          sync.Mutex
 	upgrader    websocket.Upgrader
 }
 
-func NewWebSocketHandler(userService *service.UserService) *WebSocketHandler {
+func NewWebSocketHandler(userService *service.UserService, gameService *service.GameService) *WebSocketHandler {
 	return &WebSocketHandler{
 		userService: userService,
-		clients:     make(map[*websocket.Conn]bool),
+		gameService: gameService,
+
+		rooms:       make(map[string]*Room),
+		chatClients: make(map[*websocket.Conn]bool),
 		broadcast:   make(chan dto.ChatMessage),
 		upgrader: websocket.Upgrader{
 			CheckOrigin: func(r *http.Request) bool {
@@ -30,7 +43,8 @@ func NewWebSocketHandler(userService *service.UserService) *WebSocketHandler {
 	}
 }
 
-func (h *WebSocketHandler) HandleWebSocket(ctx *gin.Context) {
+func (h *WebSocketHandler) HandleChatWebSocket(ctx *gin.Context) {
+	// Обработчик для чата
 	userID, err := getUserID(ctx)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -53,49 +67,180 @@ func (h *WebSocketHandler) HandleWebSocket(ctx *gin.Context) {
 	}
 
 	h.mu.Lock()
-	h.clients[conn] = true
+	h.chatClients[conn] = true
 	h.mu.Unlock()
 
 	defer func() {
 		h.mu.Lock()
-		delete(h.clients, conn)
+		delete(h.chatClients, conn)
 		h.mu.Unlock()
-		err := conn.Close()
+		err = conn.Close()
 		if err != nil {
 			return
 		}
 	}()
 
+	// Обработка сообщений для чата
 	for {
-		_, msg, err := conn.ReadMessage()
+		messageType, msg, err := conn.ReadMessage()
 		if err != nil {
 			break
 		}
 
-		chatMessage := dto.ChatMessage{
-			Name:      name,
-			AvatarURL: avatarURL,
-			Message:   string(msg),
+		if messageType == websocket.TextMessage {
+			chatMessage := dto.ChatMessage{
+				Name:      name,
+				AvatarURL: avatarURL,
+				Message:   string(msg),
+			}
+			h.broadcast <- chatMessage
 		}
-
-		h.broadcast <- chatMessage
 	}
 }
 
-func (h *WebSocketHandler) StartBroadcasting() {
+func (h *WebSocketHandler) StartChatBroadcasting() {
 	for {
 		message := <-h.broadcast
 		h.mu.Lock()
-		for client := range h.clients {
+		for client := range h.chatClients {
 			err := client.WriteJSON(message)
 			if err != nil {
-				err := client.Close()
+				err = client.Close()
 				if err != nil {
 					return
 				}
-				delete(h.clients, client)
+				delete(h.chatClients, client)
 			}
 		}
 		h.mu.Unlock()
+	}
+}
+
+func (h *WebSocketHandler) HandleGameWebSocket(ctx *gin.Context) {
+	// Обработчик для игровой комнаты
+	gameName := ctx.Param("name")
+
+	conn, err := h.upgrader.Upgrade(ctx.Writer, ctx.Request, nil)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "failed to upgrade connection"})
+		return
+	}
+
+	h.mu.Lock()
+	var room *Room
+	room, exists := h.rooms[gameName]
+	if !exists {
+		room = &Room{
+			results: make(chan dto.GameResultMessage),
+			clients: make(map[*websocket.Conn]bool),
+		}
+		h.rooms[gameName] = room
+		go h.startRoomResults(room, gameName) // Запускаем отправку результатов для игры
+	}
+	room.mu.Lock()
+	room.clients[conn] = true
+	room.mu.Unlock()
+	h.mu.Unlock()
+
+	defer func() {
+		h.mu.Lock()
+		delete(room.clients, conn)
+		h.mu.Unlock()
+		err = conn.Close()
+		if err != nil {
+			return
+		}
+	}()
+
+	// Обработка сообщений для игры
+	for {
+		messageType, msg, err := conn.ReadMessage()
+		if err != nil {
+			break
+		}
+
+		if messageType == websocket.TextMessage {
+			room.mu.Lock()
+			for client := range room.clients {
+				err := client.WriteMessage(websocket.TextMessage, msg)
+				if err != nil {
+					err = client.Close()
+					if err != nil {
+						return
+					}
+					delete(room.clients, client)
+				}
+			}
+			room.mu.Unlock()
+		}
+	}
+}
+
+func (h *WebSocketHandler) startRoomResults(room *Room, gameName string) {
+	var ticker *time.Ticker
+	var tickerInterval time.Duration
+
+	var crashResult float64
+	var wheelResult int
+
+	ticker = time.NewTicker(5 * time.Second) // Создаем тикер с начальным интервалом
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			result, err := h.gameService.GetGameResult(gameName)
+			if err != nil {
+				continue
+			}
+
+			var gameResult dto.GameResultMessage
+			switch gameName {
+			case "crash":
+				crashResult, _ = result.(float64)
+
+				gameResult = dto.GameResultMessage{
+					Name:   gameName,
+					Result: crashResult,
+				}
+			case "wheel":
+				wheelResult, _ = result.(int)
+
+				gameResult = dto.GameResultMessage{
+					Name:   gameName,
+					Result: wheelResult,
+				}
+			default:
+				continue
+			}
+
+			// Отправляем результат всем клиентам в комнате
+			room.mu.Lock()
+			for client := range room.clients {
+				err := client.WriteJSON(gameResult)
+				if err != nil {
+					err = client.Close()
+					if err != nil {
+						return
+					}
+					delete(room.clients, client)
+				}
+			}
+			room.mu.Unlock()
+
+			// Динамически меняем интервал на основе результата
+			switch gameName {
+			case "crash":
+				// 0.1x = 0.1sec
+				tickerInterval = time.Duration(crashResult*float64(time.Second)) + 5*time.Second
+			case "wheel":
+				// 15sec
+				tickerInterval = 15 * time.Second
+			}
+
+			// Перезапускаем тикер с новым интервалом
+			ticker.Stop()
+			ticker = time.NewTicker(tickerInterval)
+		}
 	}
 }
