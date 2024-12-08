@@ -50,7 +50,7 @@ func (s *GameService) GetGameResult(gameName string) (interface{}, error) {
 		lambda := 1.2
 
 		// Генерируем случайный коэффициент по экспоненциальному распределению
-		crashPoint := rand.ExpFloat64() / lambda
+		crashPoint := math.Exp(rand.ExpFloat64() / lambda)
 
 		// Округляем до двух знаков после запятой
 		crashPoint = math.Round(crashPoint*100) / 100

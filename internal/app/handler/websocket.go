@@ -44,7 +44,6 @@ func NewWebSocketHandler(userService *service.UserService, gameService *service.
 }
 
 func (h *WebSocketHandler) HandleChatWebSocket(ctx *gin.Context) {
-	// Обработчик для чата
 	userID, err := getUserID(ctx)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -80,7 +79,6 @@ func (h *WebSocketHandler) HandleChatWebSocket(ctx *gin.Context) {
 		}
 	}()
 
-	// Обработка сообщений для чата
 	for {
 		messageType, msg, err := conn.ReadMessage()
 		if err != nil {
@@ -117,7 +115,6 @@ func (h *WebSocketHandler) StartChatBroadcasting() {
 }
 
 func (h *WebSocketHandler) HandleGameWebSocket(ctx *gin.Context) {
-	// Обработчик для игровой комнаты
 	gameName := ctx.Param("name")
 
 	conn, err := h.upgrader.Upgrade(ctx.Writer, ctx.Request, nil)
@@ -135,7 +132,7 @@ func (h *WebSocketHandler) HandleGameWebSocket(ctx *gin.Context) {
 			clients: make(map[*websocket.Conn]bool),
 		}
 		h.rooms[gameName] = room
-		go h.startRoomResults(room, gameName) // Запускаем отправку результатов для игры
+		go h.startRoomResults(room, gameName)
 	}
 	room.mu.Lock()
 	room.clients[conn] = true
@@ -152,7 +149,6 @@ func (h *WebSocketHandler) HandleGameWebSocket(ctx *gin.Context) {
 		}
 	}()
 
-	// Обработка сообщений для игры
 	for {
 		messageType, msg, err := conn.ReadMessage()
 		if err != nil {
@@ -214,7 +210,6 @@ func (h *WebSocketHandler) startRoomResults(room *Room, gameName string) {
 				continue
 			}
 
-			// Отправляем результат всем клиентам в комнате
 			room.mu.Lock()
 			for client := range room.clients {
 				err := client.WriteJSON(gameResult)
@@ -232,7 +227,7 @@ func (h *WebSocketHandler) startRoomResults(room *Room, gameName string) {
 			switch gameName {
 			case "crash":
 				// 0.1x = 0.1sec
-				tickerInterval = time.Duration(crashResult*float64(time.Second)) + 5*time.Second
+				tickerInterval = time.Duration(crashResult*float64(time.Second)) + 15*time.Second
 			case "wheel":
 				// 15sec
 				tickerInterval = 15 * time.Second

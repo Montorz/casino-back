@@ -76,3 +76,46 @@ func JwtAuth(tokenDecoder TokenDecoder) gin.HandlerFunc {
 		ginCtx.Next()
 	}
 }
+
+func JwtWebSocketAuth(tokenDecoder TokenDecoder) gin.HandlerFunc {
+	return func(ginCtx *gin.Context) {
+		query := ginCtx.DefaultQuery("token", "")
+		if query == "" {
+			ginCtx.AbortWithStatusJSON(http.StatusUnauthorized, ErrorResponseMessage{
+				Status:      http.StatusUnauthorized,
+				Code:        "",
+				Description: "auth message is wrong",
+			})
+			return
+		}
+
+		valid, err := tokenDecoder.Valid(query)
+		if err != nil || !valid {
+			ginCtx.AbortWithStatusJSON(http.StatusUnauthorized, ErrorResponseMessage{
+				Status:      http.StatusUnauthorized,
+				Code:        "",
+				Description: err.Error(),
+			})
+			return
+		}
+
+		if !valid {
+			ginCtx.AbortWithStatusJSON(http.StatusUnauthorized, ErrorResponseMessage{
+				Status:      http.StatusUnauthorized,
+				Code:        "",
+				Description: "token is not valid",
+			})
+			return
+		}
+
+		decodeToken, _, _ := tokenDecoder.Decode(
+			query,
+			&dto.JwtUserClaims{},
+		)
+		if claims, ok := decodeToken.Claims.(*dto.JwtUserClaims); ok {
+			ginCtx.Set(contextUserId, claims.UserId)
+		}
+
+		ginCtx.Next()
+	}
+}

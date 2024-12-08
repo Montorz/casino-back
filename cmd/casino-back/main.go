@@ -55,12 +55,15 @@ func main() {
 		auth.POST("/sign-in", authHandler.SignIn)
 	}
 
-	api := r.Group("/api", middleware.JwtAuth(jwtTokenManager))
+	ws := r.Group("/ws")
 	{
 		go webSocketHandler.StartChatBroadcasting()
-		api.GET("/chat", webSocketHandler.HandleChatWebSocket)
-		api.GET("/:name", webSocketHandler.HandleGameWebSocket)
+		ws.GET("/chat", middleware.JwtWebSocketAuth(jwtTokenManager), webSocketHandler.HandleChatWebSocket)
+		ws.GET("/:name", webSocketHandler.HandleGameWebSocket)
+	}
 
+	api := r.Group("/api", middleware.JwtAuth(jwtTokenManager))
+	{
 		account := api.Group("/account")
 		{
 			account.GET("/data", userHandler.GetUserData)
