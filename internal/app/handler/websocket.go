@@ -5,6 +5,7 @@ import (
 	"casino-back/internal/app/service"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
+	"math/rand"
 	"net/http"
 	"sync"
 	"time"
@@ -173,69 +174,81 @@ func (h *WebSocketHandler) HandleGameWebSocket(ctx *gin.Context) {
 }
 
 func (h *WebSocketHandler) startRoomResults(room *Room, gameName string) {
-	var ticker *time.Ticker
-	var tickerInterval time.Duration
-
-	var crashResult float64
-	var wheelResult int
-
-	ticker = time.NewTicker(5 * time.Second) // Создаем тикер с начальным интервалом
-	defer ticker.Stop()
-
 	for {
-		select {
-		case <-ticker.C:
-			result, err := h.gameService.GetGameResult(gameName)
-			if err != nil {
-				continue
-			}
+		// 1. Пауза перед стартом игры
+		time.Sleep(10 * time.Second)
 
-			var gameResult dto.GameResultMessage
-			switch gameName {
-			case "crash":
-				crashResult, _ = result.(float64)
-
-				gameResult = dto.GameResultMessage{
-					Name:   gameName,
-					Result: crashResult,
-				}
-			case "wheel":
-				wheelResult, _ = result.(int)
-
-				gameResult = dto.GameResultMessage{
-					Name:   gameName,
-					Result: wheelResult,
-				}
-			default:
-				continue
-			}
-
-			room.mu.Lock()
-			for client := range room.clients {
-				err := client.WriteJSON(gameResult)
-				if err != nil {
-					err = client.Close()
-					if err != nil {
-						return
-					}
-					delete(room.clients, client)
-				}
-			}
-			room.mu.Unlock()
-
-			// Динамически меняем интервал на основе результата
-			switch gameName {
-			case "crash":
-				// 0.1x = 0.1sec
-				tickerInterval = time.Duration(crashResult*float64(time.Second)) + 15*time.Second
-			case "wheel":
-				// 15sec
-				tickerInterval = 15 * time.Second
-			}
-
-			// Перезапускаем тикер с новым интервалом
-			ticker.Stop()
-			ticker = time.NewTicker(tickerInterval)
+		// 2. Генерация результата
+		result, err := h.gameService.GetGameResult(gameName)
+		if err != nil {
+			continue // Пропускаем итерацию при ошибке
 		}
+
+		var gameResult dto.GameResultMessage
+		var animationDuration time.Duration
+
+		switch gameName {
+		case "crash":
+			// Получаем результат для игры "Crash"
+			crashResult, _ := result.(float64)
+
+			// Вычисляем длительность анимации
+			animationDuration = time.Duration(crashResult*float64(time.Second)) + 3*time.Second
+
+			// Формируем сообщение "start"
+			gameResult = dto.GameResultMessage{
+				Name:   gameName,
+				Result: "start",
+			}
+
+		case "wheel":
+			// Получаем результат для игры "Wheel"
+			//wheelResult, _ := result.(int)
+
+			// Генерируем случайную длительность вращения (5-20 секунд)
+			randomSeconds := rand.Intn(16) + 5
+			animationDuration = time.Duration(randomSeconds)*time.Second + 3*time.Second
+
+			// Формируем сообщение "start"
+			gameResult = dto.GameResultMessage{
+				Name:   gameName,
+				Result: "start",
+			}
+
+		default:
+			continue
+		}
+
+		// 3. Уведомляем клиентов о старте игры
+		room.mu.Lock()
+		for client := range room.clients {
+			err := client.WriteJSON(gameResult)
+			if err != nil {
+				err = client.Close()
+				if err != nil {
+					return
+				}
+				delete(room.clients, client)
+			}
+		}
+		room.mu.Unlock()
+
+		// 4. Ждем окончания "анимации"
+		time.Sleep(animationDuration)
+
+		// 5. Отправляем сообщение "stop"
+		gameResult.Result = "stop"
+		room.mu.Lock()
+		for client := range room.clients {
+			err := client.WriteJSON(gameResult)
+			if err != nil {
+				err = client.Close()
+				if err != nil {
+					return
+				}
+				delete(room.clients, client)
+			}
+		}
+		room.mu.Unlock()
 	}
 }
