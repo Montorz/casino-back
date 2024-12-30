@@ -79,9 +79,7 @@ func main() {
 
 		game := api.Group("/game")
 		{
-			game.GET("/:name/result", gameHandler.GetGameResult)
 			game.POST("/bet", gameHandler.PlaceBet)
-
 			game.POST("/create", gameHandler.CreateGame)
 			game.GET("/history", gameHandler.GetGames)
 		}

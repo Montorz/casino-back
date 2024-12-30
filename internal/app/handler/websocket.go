@@ -5,7 +5,6 @@ import (
 	"casino-back/internal/app/service"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
-	"math/rand"
 	"net/http"
 	"sync"
 	"time"
@@ -175,13 +174,30 @@ func (h *WebSocketHandler) HandleGameWebSocket(ctx *gin.Context) {
 
 func (h *WebSocketHandler) startRoomResults(room *Room, gameName string) {
 	for {
-		// 1. Пауза перед стартом игры
-		time.Sleep(10 * time.Second)
+		// 1. Уведомляем клиентов о паузе перед стартом игры
+		pauseMessage := dto.GameResultMessage{
+			Name:   gameName,
+			Status: "pause",
+		}
 
-		// 2. Генерация результата
+		room.mu.Lock()
+		for client := range room.clients {
+			err := client.WriteJSON(pauseMessage)
+			if err != nil {
+				err = client.Close()
+				if err != nil {
+					return
+				}
+				delete(room.clients, client)
+			}
+		}
+		room.mu.Unlock()
+		time.Sleep(10 * time.Second) // 10sec
+
+		// 2. Генерация результата и длительности анимаций
 		result, err := h.gameService.GetGameResult(gameName)
 		if err != nil {
-			continue // Пропускаем итерацию при ошибке
+			continue
 		}
 
 		var gameResult dto.GameResultMessage
@@ -189,30 +205,26 @@ func (h *WebSocketHandler) startRoomResults(room *Room, gameName string) {
 
 		switch gameName {
 		case "crash":
-			// Получаем результат для игры "Crash"
 			crashResult, _ := result.(float64)
+			if crashResult == 0 {
+				animationDuration = 0 // 1x = crash
+			} else {
+				animationDuration = time.Duration(crashResult * float64(time.Second)) // 0.1x = 0.1 sec
+			}
 
-			// Вычисляем длительность анимации
-			animationDuration = time.Duration(crashResult*float64(time.Second)) + 3*time.Second
-
-			// Формируем сообщение "start"
 			gameResult = dto.GameResultMessage{
 				Name:   gameName,
-				Result: "start",
+				Status: "start",
 			}
 
 		case "wheel":
-			// Получаем результат для игры "Wheel"
-			//wheelResult, _ := result.(int)
+			wheelResult, _ := result.(int)
+			animationDuration = 15 * time.Second // 15sec
 
-			// Генерируем случайную длительность вращения (5-20 секунд)
-			randomSeconds := rand.Intn(16) + 5
-			animationDuration = time.Duration(randomSeconds)*time.Second + 3*time.Second
-
-			// Формируем сообщение "start"
 			gameResult = dto.GameResultMessage{
 				Name:   gameName,
-				Result: "start",
+				Status: "start",
+				Result: wheelResult,
 			}
 
 		default:
@@ -237,7 +249,7 @@ func (h *WebSocketHandler) startRoomResults(room *Room, gameName string) {
 		time.Sleep(animationDuration)
 
 		// 5. Отправляем сообщение "stop"
-		gameResult.Result = "stop"
+		gameResult.Status = "stop"
 		room.mu.Lock()
 		for client := range room.clients {
 			err := client.WriteJSON(gameResult)

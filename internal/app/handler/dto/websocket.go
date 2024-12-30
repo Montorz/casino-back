@@ -8,5 +8,6 @@ type ChatMessage struct {
 
 type GameResultMessage struct {
 	Name   string      `json:"name"`
-	Result interface{} `json:"result"`
+	Status string      `json:"status"`
+	Result interface{} `json:"result,omitempty"`
 }

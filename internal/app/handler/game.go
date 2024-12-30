@@ -18,32 +18,6 @@ func NewGameHandler(gameService *service.GameService, userService *service.UserS
 	return &GameHandler{gameService: gameService, userService: userService}
 }
 
-func (h *GameHandler) GetGameResult(ctx *gin.Context) {
-	gameName := ctx.Param("name")
-	if gameName == "" {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "game name is required"})
-		return
-	}
-
-	switch gameName {
-	case "crash":
-		crashPoint, err := h.gameService.GetGameResult(gameName)
-		if err != nil {
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid game result"})
-			return
-		}
-
-		ctx.JSON(http.StatusOK, map[string]interface{}{
-			"message":     "Crash result successfully retrieved",
-			"crash_point": crashPoint,
-		})
-		return
-	default:
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid game name"})
-		return
-	}
-}
-
 func (h *GameHandler) PlaceBet(ctx *gin.Context) {
 	userID, err := getUserID(ctx)
 	if err != nil {
