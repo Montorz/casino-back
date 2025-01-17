@@ -57,14 +57,31 @@ func (s *GameService) GetGameResult(gameName string) (interface{}, error) {
 
 		return crashPoint, nil
 	case "wheel":
-		// Берём случайное число из массива чисел на колесе
+		// Массив чисел на колесе
 		numbers := []int{20, 1, 3, 1, 5, 1, 3, 1, 10, 1, 3, 1, 5, 1, 5, 3, 1, 10, 1, 3, 1, 5, 1, 3, 1}
 
 		// Генерация случайного индекса для выбора числа из массива
 		randomIndex := rand.Intn(len(numbers))
 
-		// Возвращаем выбранное число
-		return numbers[randomIndex], nil
+		// Возвращаем случайный индекс
+		return randomIndex, nil
+	case "fruits":
+		// Определяем доступные символы
+		fruitNames := []string{"Cherry", "Lemon", "Orange", "Plum", "Bell", "Bar", "7"}
+		rand.Seed(time.Now().UnixNano())
+
+		// Сначала выбираем один символ с повышенным шансом
+		mainFruit := fruitNames[rand.Intn(len(fruitNames))]
+
+		// Генерируем результат с повышенным шансом на 3 одинаковых
+		result := []string{mainFruit, mainFruit, mainFruit} // Повышенный шанс на три одинаковых
+		if rand.Float64() > 0.3 {                           // В 70% случаев добавляем разнообразие
+			result[1] = fruitNames[rand.Intn(len(fruitNames))]
+			result[2] = fruitNames[rand.Intn(len(fruitNames))]
+		}
+
+		// Возвращаем только результат
+		return result, nil
 	default:
 		return nil, fmt.Errorf("unsupported game: %s", gameName)
 	}

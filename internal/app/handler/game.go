@@ -42,6 +42,56 @@ func (h *GameHandler) PlaceBet(ctx *gin.Context) {
 	})
 }
 
+func (h *GameHandler) GetGameResult(ctx *gin.Context) {
+	gameName := ctx.Param("name")
+	if gameName == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "game name is required"})
+		return
+	}
+
+	switch gameName {
+	case "crash":
+		crashPoint, err := h.gameService.GetGameResult(gameName)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid game result"})
+			return
+		}
+
+		ctx.JSON(http.StatusOK, map[string]interface{}{
+			"message":     "Crash result successfully retrieved",
+			"crash_point": crashPoint,
+		})
+		return
+	case "wheel":
+		wheelResult, err := h.gameService.GetGameResult(gameName)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid game result"})
+			return
+		}
+
+		ctx.JSON(http.StatusOK, map[string]interface{}{
+			"message":      "Wheel result successfully retrieved",
+			"wheel_result": wheelResult,
+		})
+		return
+	case "fruits":
+		fruitsResult, err := h.gameService.GetGameResult(gameName)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid game result"})
+			return
+		}
+
+		ctx.JSON(http.StatusOK, map[string]interface{}{
+			"message":       "Fruits result successfully retrieved",
+			"fruits_result": fruitsResult,
+		})
+		return
+	default:
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid game name"})
+		return
+	}
+}
+
 func (h *GameHandler) CreateGame(ctx *gin.Context) {
 	var request dto.GameRequest
 

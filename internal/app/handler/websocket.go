@@ -219,7 +219,7 @@ func (h *WebSocketHandler) startRoomResults(room *Room, gameName string) {
 
 		case "wheel":
 			wheelResult, _ := result.(int)
-			animationDuration = 15 * time.Second // 15sec
+			animationDuration = 10 * time.Second // 10sec
 
 			gameResult = dto.GameResultMessage{
 				Name:   gameName,
