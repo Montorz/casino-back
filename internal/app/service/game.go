@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+	"strings"
 	"time"
 )
 
@@ -67,7 +68,7 @@ func (s *GameService) GetGameResult(gameName string) (interface{}, error) {
 		return randomIndex, nil
 	case "fruits":
 		// Определяем доступные символы
-		fruitNames := []string{"Cherry", "Lemon", "Orange", "Plum", "Bell", "Bar", "7"}
+		fruitNames := []string{"Капуста", "Огурец", "Морковка", "Картошка", "Помидор", "Укроп", "Водка"}
 		rand.Seed(time.Now().UnixNano())
 
 		// Сначала выбираем один символ с повышенным шансом
@@ -80,8 +81,37 @@ func (s *GameService) GetGameResult(gameName string) (interface{}, error) {
 			result[2] = fruitNames[rand.Intn(len(fruitNames))]
 		}
 
-		// Возвращаем только результат
-		return result, nil
+		// Множители для различных комбинаций
+		multipliers := map[string]int{
+			"Капуста-Капуста-Капуста":    2,
+			"Огурец-Огурец-Огурец":       3,
+			"Морковка-Морковка-Морковка": 4,
+			"Картошка-Картошка-Картошка": 5,
+			"Помидор-Помидор-Помидор":    6,
+			"Укроп-Укроп-Укроп":          7,
+			"Водка-Водка-Водка":          10,
+		}
+
+		// Сортируем результаты, чтобы не зависеть от порядка
+		sortedResult := fmt.Sprintf("%s-%s-%s", result[0], result[1], result[2])
+		sortedResult = strings.Join(strings.Split(sortedResult, "-"), "-")
+
+		// Применяем множитель в зависимости от комбинации
+		multiplier, exists := multipliers[sortedResult]
+		if !exists {
+			// Если комбинации нет в карте, множитель 0x
+			multiplier = 0
+		}
+
+		// Возвращаем результат в виде интерфейса
+		return struct {
+			Result     []string `json:"result"`
+			Multiplier int      `json:"multiplier"`
+		}{
+			Result:     result,
+			Multiplier: multiplier,
+		}, nil
+
 	default:
 		return nil, fmt.Errorf("unsupported game: %s", gameName)
 	}
