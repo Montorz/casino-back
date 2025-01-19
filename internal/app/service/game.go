@@ -71,39 +71,41 @@ func (s *GameService) GetGameResult(gameName string) (interface{}, error) {
 		fruitNames := []string{"Капуста", "Огурец", "Морковка", "Картошка", "Помидор", "Укроп", "Водка"}
 		rand.Seed(time.Now().UnixNano())
 
-		// Сначала выбираем один символ с повышенным шансом
-		mainFruit := fruitNames[rand.Intn(len(fruitNames))]
-
-		// Генерируем результат с повышенным шансом на 3 одинаковых
-		result := []string{mainFruit, mainFruit, mainFruit} // Повышенный шанс на три одинаковых
-		if rand.Float64() > 0.3 {                           // В 70% случаев добавляем разнообразие
-			result[1] = fruitNames[rand.Intn(len(fruitNames))]
-			result[2] = fruitNames[rand.Intn(len(fruitNames))]
-		}
-
 		// Множители для различных комбинаций
 		multipliers := map[string]int{
-			"Капуста-Капуста-Капуста":    2,
-			"Огурец-Огурец-Огурец":       3,
+			"Укроп-Укроп-Укроп":          2,
+			"Капуста-Капуста-Капуста":    3,
 			"Морковка-Морковка-Морковка": 4,
-			"Картошка-Картошка-Картошка": 5,
+			"Огурец-Огурец-Огурец":       5,
 			"Помидор-Помидор-Помидор":    6,
-			"Укроп-Укроп-Укроп":          7,
-			"Водка-Водка-Водка":          10,
+			"Картошка-Картошка-Картошка": 7,
+			"Водка-Водка-Водка":          8,
 		}
 
-		// Сортируем результаты, чтобы не зависеть от порядка
-		sortedResult := fmt.Sprintf("%s-%s-%s", result[0], result[1], result[2])
-		sortedResult = strings.Join(strings.Split(sortedResult, "-"), "-")
+		// Генерация символов для результата
+		result := make([]string, 3)
+		mainFruit := fruitNames[rand.Intn(len(fruitNames))]
 
-		// Применяем множитель в зависимости от комбинации
-		multiplier, exists := multipliers[sortedResult]
-		if !exists {
-			// Если комбинации нет в карте, множитель 0x
-			multiplier = 0
+		// С повышенным шансом генерируем три одинаковых символа
+		if rand.Float64() < 0.05 { // 5% на три одинаковых
+			result[0], result[1], result[2] = mainFruit, mainFruit, mainFruit
+		} else {
+			// Иначе генерируем случайное разнообразие
+			for i := 0; i < 3; i++ {
+				result[i] = fruitNames[rand.Intn(len(fruitNames))]
+			}
 		}
 
-		// Возвращаем результат в виде интерфейса
+		// Сортируем результаты для корректного поиска множителя
+		sortedResult := strings.Join(result, "-")
+
+		// Определяем множитель с учетом закрепленного множителя для каждой комбинации
+		multiplier := 0
+		if multiplierValue, exists := multipliers[sortedResult]; exists {
+			multiplier = multiplierValue
+		}
+
+		// Возвращаем результат
 		return struct {
 			Result     []string `json:"result"`
 			Multiplier int      `json:"multiplier"`
